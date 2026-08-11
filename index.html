@@ -92,13 +92,12 @@ button{ font:inherit; }
 .entry .esub{ font-family:var(--font-mono); font-size:.62rem; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px;}
 .entry p{ margin:0 0 8px; line-height:1.7; font-size:.95rem; color:var(--chalk); }
 .entry .picked{ font-size:.86rem; color:var(--dim); border-left:2px solid var(--gold); padding-left:10px; margin:8px 0 8px;}
-.verdict{
-  font-family:var(--font-mono); font-size:.72rem; font-weight:700; letter-spacing:.08em;
-  text-transform:uppercase; margin:2px 0 8px;
-}
-.verdict.up{ color:var(--good); }
-.verdict.down{ color:var(--bad); }
-.verdict.flat{ color:var(--dim); }
+.result-text{ display:flex; gap:8px; align-items:flex-start; margin:2px 0 10px; }
+.result-text .vdot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-top:8px; flex-shrink:0; }
+.result-text .vdot.up{ background:var(--good); }
+.result-text .vdot.down{ background:var(--bad); }
+.result-text .vdot.flat{ background:var(--dim); }
+.result-text span.rtxt{ font-size:.92rem; line-height:1.65; color:var(--chalk); }
 .delta{ display:flex; flex-wrap:wrap; gap:6px 8px; margin-top:2px; }
 .delta span{
   font-family:var(--font-mono); font-size:.78rem; font-weight:700;
@@ -347,9 +346,18 @@ function applyDelta(p, delta){
   if(delta.fame) p.fame = clamp(p.fame+(delta.fame||0),0,100);
 }
 
+/* ---------- narrative helpers (used inside EVENTS, so declared early) ---------- */
+function logCountRef(title){ return S.log.filter(function(l){ return l.title===title; }).length; }
+function stale(title, variants){
+  var n = logCountRef(title);
+  return variants[Math.min(n, variants.length-1)];
+}
+
 /* ---------- event pool ---------- */
 /* events are one-off by default (once a career sees them, they're used up) —
-   mark repeat:true for genuinely recurring, routine-life events */
+   mark repeat:true for genuinely recurring, routine-life events.
+   choice.result = authored "what actually happened" line (falls back to a generic one).
+   choice.style = "bold" | "safe", tallied for an end-of-career style note. */
 function EV(o){
   o.weight=o.weight||1; o.paths=o.paths||["all"]; o.stageMin=o.stageMin||1; o.stageMax=o.stageMax||4;
   if(o.once===undefined) o.once = !o.repeat;
@@ -358,126 +366,153 @@ function EV(o){
 
 var EVENTS = [
 EV({id:"health", repeat:true, title:"年度健檢通知單",
-  desc:function(p){ return p.name+"收到健檢報告，醫生指著紅字說：「這些數字，出版業的人我看多了。」"; },
+  desc:function(p){ return stale("年度健檢通知單", [
+    p.name+"收到健檢報告，醫生指著紅字說：「這些數字，出版業的人我看多了。」",
+    "又到了年度健檢時間，"+p.name+"翻開報告，紅字比去年更紅了一些。",
+    "第"+(logCountRef("年度健檢通知單")+1)+"次健檢，"+p.name+"已經可以背出醫生接下來要說的台詞。"
+  ]); },
   choices:[
-    {label:"乖乖排時間去做復健、規律運動", delta:{d:6, money:-3}},
-    {label:"先擋著，稿子／案子比較重要", delta:{d:-8, e:2}}
+    {label:"乖乖排時間去做復健、規律運動", delta:{d:6, money:-3}, style:"safe",
+      result:"復健排進行事曆後，身體漸漸沒那麼容易垮，只是荷包薄了一點。"},
+    {label:"先擋著，稿子／案子比較重要", delta:{d:-8, e:2}, style:"bold",
+      result:"報告先塞進抽屜，"+"日子照樣往前衝，只是身體默默記下這筆帳。"}
   ]}),
 
 EV({id:"ai_wave", once:true, stageMin:2,
   title:"AI 浪潮打進辦公室",
   desc:function(p){ return "生成式 AI 工具席捲整個產業，同業一半在恐慌、一半在偷用。"+p.name+"要選一條路。"; },
   choices:[
-    {label:"認真學工具，把它當助理", delta:{b:10, d:-3}},
-    {label:"堅持純手工，向讀者強調「這是人做的」", delta:{fame:6, c:-4}}
+    {label:"認真學工具，把它當助理", delta:{b:10, d:-3}, style:"safe",
+      result:"上手後效率明顯提升，同事開始私下來問怎麼用。"},
+    {label:"堅持純手工，向讀者強調「這是人做的」", delta:{fame:6, c:-4}, style:"bold",
+      result:"這個堅持意外成了話題，也讓幾個同業覺得被暗酸了一把。"}
   ]}),
 
 EV({id:"pandemic", once:true, stageMax:2,
   title:"一場誰也沒料到的疫情",
   desc:function(p){ return "通路全面停擺，線上活動一夕成為主流。"+p.name+"的收入曲線瞬間變成心電圖。"; },
   choices:[
-    {label:"轉戰線上直播、線上活動", delta:{c:6, money:-5, fame:4}},
-    {label:"咬牙撐過去，能省則省", delta:{money:5, d:-6}}
+    {label:"轉戰線上直播、線上活動", delta:{c:6, money:-5, fame:4}, style:"bold",
+      result:"手忙腳亂地摸索直播設備，意外打開了一些原本觸及不到的觀眾。"},
+    {label:"咬牙撐過去，能省則省", delta:{money:5, d:-6}, style:"safe",
+      result:"省下的每一分錢都很有感，但撐過去的過程也磨掉了不少精神。"}
   ]}),
 
 EV({id:"lowbirth", stageMin:2,
   title:"少子化的帳，攤在眼前",
   desc:function(p){ return "出版市場年度報告出爐：讀者基數持續萎縮。"+p.name+"開會時被問「你有什麼對策」。"; },
   choices:[
-    {label:"往國際版權／海外市場找出路", delta:{c:6, money:-4}},
-    {label:"深耕本地鐵粉，做小而美的路線", delta:{fame:5, d:3}}
+    {label:"往國際版權／海外市場找出路", delta:{c:6, money:-4}, style:"bold"},
+    {label:"深耕本地鐵粉，做小而美的路線", delta:{fame:5, d:3}, style:"safe"}
   ]}),
 
 EV({id:"grant_scandal", stageMin:2,
   title:"標案風波",
   desc:function(p){ return p.name+"所屬單位標下一筆政府文化補助案，結案報告卻被眼尖的網友抓到「差旅費」比「印製費」還高，話題瞬間炸開。"; },
   choices:[
-    {label:"公開帳目、正面說明", delta:{fame:-4, d:6, money:-6}},
-    {label:"低調不回應，讓話題自然退燒", delta:{fame:-10, c:-4}}
+    {label:"公開帳目、正面說明", delta:{fame:-4, d:6, money:-6}, style:"bold",
+      result:"帳目公開後話題冷得比預期快，但這陣子的精神消耗不小。"},
+    {label:"低調不回應，讓話題自然退燒", delta:{fame:-10, c:-4}, style:"safe",
+      result:"話題是退了，但業界圈子裡，這件事被記了很久。"}
   ]}),
 
 EV({id:"foundation", stageMin:2,
   title:"老闆的那個基金會",
   desc:function(p){ return "小道消息傳開："+p.name+"的老闆同時掌控著一個文化基金會，補助案審核委員名單裡，一半的人跟老闆吃過飯。"; },
   choices:[
-    {label:"裝作不知道，專心做自己的事", delta:{d:2, money:3}},
-    {label:"私下向朋友抱怨兩句，結果被截圖", delta:{fame:-6, c:-6}}
+    {label:"裝作不知道，專心做自己的事", delta:{d:2, money:3}, style:"safe"},
+    {label:"私下向朋友抱怨兩句，結果被截圖", delta:{fame:-6, c:-6}, style:"bold",
+      result:"截圖流出的那天，"+"手機震到沒電，此後好一陣子都不敢多話。"}
   ]}),
 
 EV({id:"blurb_backfire", stageMin:1,
   title:"邀請的推薦人，隔天就炎上",
   desc:function(p){ return p.name+"辛苦邀來一位重量級推薦人掛名，書上市前一晚，對方卻因為一則舊發言被起底炎上。"; },
   choices:[
-    {label:"連夜撤掉推薦語、緊急改版", delta:{money:-8, d:-5}},
-    {label:"賭一把，維持原樣照常上市", delta:{fame:pick([-8,6]), c:-3}}
+    {label:"連夜撤掉推薦語、緊急改版", delta:{money:-8, d:-5}, style:"safe",
+      result:"連夜改版總算趕上上市，印刷廠加班費也一併算進了這場風波的成本。"},
+    {label:"賭一把，維持原樣照常上市", delta:{fame:pick([-8,6]), c:-3}, style:"bold",
+      result:"賭注開出來的結果好壞參半，但至少事情算是過去了。"}
   ]}),
 
 EV({id:"belt_typo", title:"書腰上的錯字",
   desc:function(p){ return "首刷到貨當天，眼尖的讀者發現書腰上把書名印錯一個字，截圖迅速在社群流傳，配文是「這是哪招行銷？」"; },
   choices:[
-    {label:"順勢自嘲，把錯字做成限量哏", delta:{fame:8, money:-2}},
-    {label:"緊急回收重印，全額自費", delta:{money:-14, d:-4}}
+    {label:"順勢自嘲，把錯字做成限量哏", delta:{fame:8, money:-2}, style:"bold",
+      result:"錯字梗意外帶動一波討論，還有讀者專程來問「是不是還有錯字版」。"},
+    {label:"緊急回收重印，全額自費", delta:{money:-14, d:-4}, style:"safe",
+      result:"重印帳單燒掉一大筆錢，但至少書架上不會再看到那個錯字。"}
   ]}),
 
 EV({id:"language_police", title:"讀者檢討你用「支語」",
   desc:function(p){ return "文案裡一句「視頻」被讀者截圖公審，留言區吵成兩派，一派護航一派出征，"+p.name+"的通知欄瞬間爆炸。"; },
   choices:[
-    {label:"發文致歉並修正用詞", delta:{fame:-2, d:-3}},
-    {label:"不理會，讓子彈飛一會兒", delta:{fame:pick([-6,3]), c:-2}}
+    {label:"發文致歉並修正用詞", delta:{fame:-2, d:-3}, style:"safe"},
+    {label:"不理會，讓子彈飛一會兒", delta:{fame:pick([-6,3]), c:-2}, style:"bold"}
   ]}),
 
 EV({id:"merger", stageMin:3,
   title:"產業傳出大型併購案",
   desc:function(p){ return "兩間指標出版集團傳出合併消息，業界人心浮動，大家私下都在打聽誰會被資遣。"; },
   choices:[
-    {label:"利用人脈打聽情報、超前部署", delta:{c:6, d:-3}},
-    {label:"專心把手上的事做好，靜觀其變", delta:{d:5}}
+    {label:"利用人脈打聽情報、超前部署", delta:{c:6, d:-3}, style:"bold"},
+    {label:"專心把手上的事做好，靜觀其變", delta:{d:5}, style:"safe"}
   ]}),
 
 EV({id:"friend_kol", stageMin:2,
   title:"同業好友辭職開自媒體",
   desc:function(p){ return "交情不錯的同業突然宣布離職，開了個「揭密出版業」的帳號，"+p.name+"被問要不要來當第一集嘉賓。"; },
   choices:[
-    {label:"上，藉機累積個人聲量", delta:{fame:9, c:-3}},
-    {label:"婉拒，怕日後在業界難做人", delta:{c:4, fame:-1}}
+    {label:"上，藉機累積個人聲量", delta:{fame:9, c:-3}, style:"bold"},
+    {label:"婉拒，怕日後在業界難做人", delta:{c:4, fame:-1}, style:"safe"}
   ]}),
 
 /* ---------- author ---------- */
 EV({id:"hater", paths:["author"], title:"戰力與怨念都很強的黑粉",
   desc:function(p){ return "一位帳號沒有大頭貼的讀者，開始逐字逐句挑"+p.name+"每一本書的錯，戰力驚人、怨念更驚人，甚至做了整理帖。"; },
   choices:[
-    {label:"完全不看，專心寫下一本", delta:{d:6, a:2}},
-    {label:"忍不住回覆一句，戰火瞬間擴大", delta:{fame:5, d:-9, c:-3}}
+    {label:"完全不看，專心寫下一本", delta:{d:6, a:2}, style:"safe",
+      result:"不看不聽之後，反而寫得更順了，那個帳號還在，但已經影響不了什麼。"},
+    {label:"忍不住回覆一句，戰火瞬間擴大", delta:{fame:5, d:-9, c:-3}, style:"bold",
+      result:"戰況比想像中激烈，聲量是漲了，但接下來幾週都在為這件事心神不寧。"}
   ]}),
 
 EV({id:"veteran_diss", paths:["author"], stageMin:2, title:"資深大老公開開炮",
   desc:function(p){ return "一位文壇資深大老在受訪時點名："+p.name+"「文字流暢，但那個不叫小說」。媒體樂得標題下得又大又聳動。"; },
   choices:[
-    {label:"寫一篇長文正面回應、闡述創作理念", delta:{fame:10, d:-6}},
-    {label:"完全不回應，讓作品說話", delta:{d:4, fame:2}}
+    {label:"寫一篇長文正面回應、闡述創作理念", delta:{fame:10, d:-6}, style:"bold",
+      result:"這篇回應被轉發得比原本的批評還多，論戰讓更多人認識了這個名字。"},
+    {label:"完全不回應，讓作品說話", delta:{d:4, fame:2}, style:"safe",
+      result:"沒有正面交鋒，話題很快冷卻，但也少了一次被看見的機會。"}
   ]}),
 
 EV({id:"photo_rights", paths:["author"], title:"沒簽授權的那張照片",
   desc:function(p){ return p.name+"在新書裡用了一張很有意境的網路照片當插圖，出版後才發現——沒有取得攝影師授權。"; },
   choices:[
-    {label:"主動聯絡道歉、付費和解", delta:{money:-10, d:2}},
-    {label:"裝沒事，賭對方不會發現", delta:{fame:pick([-14,0]), money:pick([-20,0])}}
+    {label:"主動聯絡道歉、付費和解", delta:{money:-10, d:2}, style:"safe",
+      result:"和解金付得心痛，但至少晚上睡得著。"},
+    {label:"裝沒事，賭對方不會發現", delta:{fame:pick([-14,0]), money:pick([-20,0])}, style:"bold",
+      result:"賭注的結果只有天知道，"+"但這件事從此變成心裡一根隱隱作痛的刺。"}
   ]}),
 
 EV({id:"celeb_memoir", paths:["author"], stageMin:2, weight:0.6,
   title:"一萬美金簽下的名人自傳",
   desc:function(p){ return p.name+"力排眾議，砸下一萬美金預付金，簽下一位美國名人的自傳合作案。合約墨水未乾的隔天，對方就被爆出捲入一樁駭人聽聞的私人島嶼醜聞。"; },
   choices:[
-    {label:"火速解約，認賠殺出", delta:{money:-30, d:-5}},
-    {label:"硬著頭皮繼續出，順勢改包裝成「爭議人物觀察」", delta:{fame:12, money:-6, c:-5}}
+    {label:"火速解約，認賠殺出", delta:{money:-30, d:-5}, style:"safe",
+      result:"解約金燒掉一大筆積蓄，但至少不用把名字跟那樁醜聞綁在一起。"},
+    {label:"硬著頭皮繼續出，順勢改包裝成「爭議人物觀察」", delta:{fame:12, money:-6, c:-5}, style:"bold",
+      result:"重新包裝的話題性意外奏效，"+"只是同業私下都在傳這個決定「有點瘋」。"}
   ]}),
 
 EV({id:"overseas_offer", paths:["author"], stageMin:2,
   title:"一封來自歐洲小語種出版社的信",
   desc:function(p){ return "一封措辭正式的信件寄到信箱：某歐洲小語種出版社，想談"+p.name+"作品的翻譯授權。"; },
   choices:[
-    {label:"請經紀人／編輯協助，正式談版權", delta:{fame:10, money:6, c:4}},
-    {label:"自己土法煉鋼回信，怕搞砸細節", delta:{fame:4, d:-3}}
+    {label:"請經紀人／編輯協助，正式談版權", delta:{fame:10, money:6, c:4}, style:"safe",
+      result:"條件談得漂亮，這份授權合約後來成了履歷上很好看的一行字。"},
+    {label:"自己土法煉鋼回信，怕搞砸細節", delta:{fame:4, d:-3}, style:"bold",
+      result:"自己摸索著把合約談完，過程提心吊膽，好在結果沒出大差錯。"}
   ]}),
 
 EV({id:"nobel_rumor", paths:["author"], stageMin:3, weight:0.5,
@@ -485,218 +520,368 @@ EV({id:"nobel_rumor", paths:["author"], stageMin:3, weight:0.5,
   title:"一則不敢確認的傳言",
   desc:function(p){ return "業界流傳一個說法："+p.name+"的作品，被某個國際文學獎的觀察名單提及。沒人敢確定是真是假，但電話開始變多。"; },
   choices:[
-    {label:"低調不聲張，繼續寫", delta:{a:6, d:4}},
-    {label:"接受幾家媒體專訪，順勢曝光", delta:{fame:14, d:-4}}
+    {label:"低調不聲張，繼續寫", delta:{a:6, d:4}, style:"safe",
+      result:"不去證實也不去否認，日子照樣過，只是筆下的東西悄悄變得更沉穩了。"},
+    {label:"接受幾家媒體專訪，順勢曝光", delta:{fame:14, d:-4}, style:"bold",
+      result:"曝光度確實衝高了，代價是接下來幾個月幾乎沒有安靜寫作的時間。"}
   ]}),
 
 EV({id:"adapt_offer", paths:["author"], stageMin:2,
   title:"影視改編邀約",
   desc:function(p){ return "一間製作公司主動接觸"+p.name+"，想談作品的影視改編授權，條件聽起來很誘人，也聽起來很像陷阱。"; },
   choices:[
-    {label:"找律師仔細審約，慢慢談", delta:{money:8, d:-3, c:3}},
-    {label:"急著簽下，怕機會溜走", delta:{money:16, fame:6, d:-6}}
+    {label:"找律師仔細審約，慢慢談", delta:{money:8, d:-3, c:3}, style:"safe",
+      result:"條件被律師逐條挑出幾個地雷，談判拖了很久，但簽下去的版本算安心。"},
+    {label:"急著簽下，怕機會溜走", delta:{money:16, fame:6, d:-6}, style:"bold",
+      result:"錢很快進帳，但合約裡有幾條後來讓人隱隱不安。"}
   ]}),
 
 EV({id:"writers_block", paths:["author"], repeat:true, title:"江郎才盡的那個月",
-  desc:function(p){ return p.name+"盯著游標閃爍了三個星期，一個字都擠不出來，截稿日像倒數計時器一樣逼近。"; },
+  desc:function(p){ return stale("江郎才盡的那個月", [
+    p.name+"盯著游標閃爍了三個星期，一個字都擠不出來，截稿日像倒數計時器一樣逼近。",
+    "又一次卡稿，"+p.name+"這次連游標閃爍都懶得看，直接把螢幕關了。",
+    "這已經是常態了——"+p.name+"對「靈感」這兩個字，愈來愈沒有信心。"
+  ]); },
   choices:[
-    {label:"放自己一週假，去外地走走", delta:{d:8, money:-4}},
-    {label:"硬逼自己坐在桌前，逼出來就是", delta:{a:4, d:-10}}
+    {label:"放自己一週假，去外地走走", delta:{d:8, money:-4}, style:"safe",
+      result:"換個環境確實有用，回來後那句卡住的開頭，總算被寫出來了。"},
+    {label:"硬逼自己坐在桌前，逼出來就是", delta:{a:4, d:-10}, style:"bold",
+      result:"硬擠出來的文字讀起來還算能用，但這幾天幾乎沒睡好。"}
   ]}),
 
 EV({id:"delay_penalty", paths:["author"], repeat:true, title:"違約金追殺令",
-  desc:function(p){ return "交稿一再延遲，出版社終於寄來存證信函，語氣客氣，附件是違約金試算表。"; },
+  desc:function(p){ return stale("違約金追殺令", [
+    "交稿一再延遲，出版社終於寄來存證信函，語氣客氣，附件是違約金試算表。",
+    "又收到一封「溫馨提醒」的存證信函，"+p.name+"已經能背出那句「請於文到七日內」。",
+    "違約金試算表這次直接附上了利息計算，"+p.name+"苦笑著點開附件。"
+  ]); },
   choices:[
-    {label:"連夜熬稿，總算壓線交出", delta:{a:3, d:-9}},
-    {label:"認賠協商，延長交稿期", delta:{money:-12, d:2}}
+    {label:"連夜熬稿，總算壓線交出", delta:{a:3, d:-9}, style:"bold",
+      result:"壓線交稿，稿子品質算是撐住了，人已經半條命。"},
+    {label:"認賠協商，延長交稿期", delta:{money:-12, d:2}, style:"safe",
+      result:"認賠換來喘息空間，錢包扁了一點，但至少能睡個好覺。"}
   ]}),
 
 EV({id:"plagiarism_doubt", paths:["author"], stageMin:2,
   title:"抄襲爭議疑雲",
   desc:function(p){ return "有人在社群指出"+p.name+"某段情節「跟某部作品高度相似」，附上並排截圖，留言區迅速分成兩派。"; },
   choices:[
-    {label:"公開創作筆記、時間軸自清", delta:{d:-4, fame:pick([6,-6])}},
-    {label:"完全不回應，交給時間證明", delta:{d:-6, fame:-3}}
+    {label:"公開創作筆記、時間軸自清", delta:{d:-4, fame:pick([6,-6])}, style:"bold",
+      result:"筆記公開後，清白算是還了，但過程被翻來覆去檢視的感覺不太好受。"},
+    {label:"完全不回應，交給時間證明", delta:{d:-6, fame:-3}, style:"safe",
+      result:"沉默換來的是話題慢慢淡去，只是心裡那口氣一直沒順過。"}
   ]}),
 
 EV({id:"booksigning", paths:["author"], repeat:true,
   title:"簽書會現場",
-  desc:function(p){ return "新書簽書會當天，"+p.name+"提早到場，緊張地看著空蕩蕩的座位一格一格被填滿——或不被填滿。"; },
+  desc:function(p){ return stale("簽書會現場", [
+    "新書簽書會當天，"+p.name+"提早到場，緊張地看著空蕩蕩的座位一格一格被填滿——或不被填滿。",
+    "又一場簽書會，"+p.name+"這次沒那麼緊張了，倒是很好奇今天會來幾個人。",
+    "簽書會辦多了，"+p.name+"已經練就一眼掃過會場就能估出人數的本事。"
+  ]); },
   choices:[
-    {label:"提前在社群發動員、催朋友來撐場", delta:{c:5, fame:3, d:-2}},
-    {label:"順其自然，不特別經營", delta:{fame:pick([5,-3])}}
+    {label:"提前在社群發動員、催朋友來撐場", delta:{c:5, fame:3, d:-2}, style:"bold",
+      result:"座位總算填得像樣，只是這場動員把不少人情用掉了。"},
+    {label:"順其自然，不特別經營", delta:{fame:pick([5,-3])}, style:"safe",
+      result:"結果好壞全看緣分，這次算是給自己省了點力氣。"}
   ]}),
 
 EV({id:"fan_army", paths:["author"], stageMin:2,
   title:"書友自發出征護航",
   desc:function(p){ return "一群長期支持"+p.name+"的讀者，看到黑粉留言後自發組隊反擊，戰況激烈到上了同溫層熱門。"; },
   choices:[
-    {label:"發文感謝，順勢安撫戰場", delta:{fame:6, c:4}},
-    {label:"樂觀其成，不介入", delta:{fame:3, d:2}}
+    {label:"發文感謝，順勢安撫戰場", delta:{fame:6, c:4}, style:"safe"},
+    {label:"樂觀其成，不介入", delta:{fame:3, d:2}, style:"bold"}
   ]}),
 
 /* ---------- editor ---------- */
 EV({id:"translator_ghost", paths:["editor"], title:"人間蒸發的譯者",
   desc:function(p){ return "交稿死線前兩週，負責翻譯的譯者已讀不回，電話關機，信箱退件。"+p.name+"的行事曆開始長出白髮。"; },
   choices:[
-    {label:"緊急找救火譯者，加價趕工", delta:{money:-14, d:-4}},
-    {label:"自己下海硬翻幾章撐過去", delta:{a:5, d:-9}}
+    {label:"緊急找救火譯者，加價趕工", delta:{money:-14, d:-4}, style:"safe",
+      result:"救火譯者總算把稿子接住，預算是超了，但書如期上市。"},
+    {label:"自己下海硬翻幾章撐過去", delta:{a:5, d:-9}, style:"bold",
+      result:"自己硬翻的那幾章，意外練出了一點外語底子，人卻累到脫皮。"}
   ]}),
 
 EV({id:"new_talent", paths:["editor"], title:"挖到一位潛力新秀",
   desc:function(p){ return p.name+"在文學獎入圍名單裡，發現一個文字很有靈氣的新人，立刻寫信約喝咖啡。"; },
   choices:[
-    {label:"開出誠意十足的合作條件", delta:{money:-6, fame:6, c:5}},
-    {label:"先觀察市場反應再說", delta:{c:2}}
+    {label:"開出誠意十足的合作條件", delta:{money:-6, fame:6, c:5}, style:"bold",
+      result:"誠意打動了對方，簽下的這個新人，後來成了業界私下常被提起的名字。"},
+    {label:"先觀察市場反應再說", delta:{c:2}, style:"safe",
+      result:"觀望之間，這位新人被別家出版社先一步簽走了。"}
   ]}),
 
 EV({id:"advance_overshoot", paths:["editor"], title:"手滑核准的預付版稅",
   desc:function(p){ return "會議上"+p.name+"為了搶下一本書，衝動喊出一個超出預算的預付版稅數字，老闆的表情瞬間僵住。"; },
   choices:[
-    {label:"回去仔細做財務模型自圓其說", delta:{b:6, d:-4}},
-    {label:"死撐這個決定，賭書會大賣", delta:{money:-16, fame:5}}
+    {label:"回去仔細做財務模型自圓其說", delta:{b:6, d:-4}, style:"safe",
+      result:"財務模型做得漂亮，老闆勉強點了頭，這筆帳算是壓下去了。"},
+    {label:"死撐這個決定，賭書會大賣", delta:{money:-16, fame:5}, style:"bold",
+      result:"賭注沒有全輸，書的討論度確實起來了，只是財報上那個數字很難看。"}
   ]}),
 
 EV({id:"boss_pressure", paths:["editor"], repeat:true, stageMin:2, title:"主管的不合理要求",
-  desc:function(p){ return "主管要求"+p.name+"去「側面了解」某位作者的私生活八卦，理由是「公關風險評估」。"; },
+  desc:function(p){ return stale("主管的不合理要求", [
+    "主管要求"+p.name+"去「側面了解」某位作者的私生活八卦，理由是「公關風險評估」。",
+    "主管這次的要求更露骨了，"+p.name+"開始懷疑這份工作的邊界到底在哪裡。",
+    "類似的要求又來了，"+p.name+"對這種對話已經有固定的應對台詞。"
+  ]); },
   choices:[
-    {label:"拒絕，這不是編輯該做的事", delta:{d:5, c:-3}},
-    {label:"敷衍應付、隨便交差", delta:{d:-5, money:2}}
+    {label:"拒絕，這不是編輯該做的事", delta:{d:5, c:-3}, style:"bold",
+      result:"拒絕之後主管的臉色不太好看，但"+"至少守住了自己的底線。"},
+    {label:"敷衍應付、隨便交差", delta:{d:-5, money:2}, style:"safe",
+      result:"應付過去了，"+"心裡卻一直有種說不上來的不舒服。"}
   ]}),
 
 EV({id:"factcheck_save", paths:["editor"], title:"驚險攔截的事實查核",
   desc:function(p){ return "上機前最後校對，"+p.name+"發現書裡引用的一段歷史事件年份完全錯誤，若印出去可能被出征。"; },
   choices:[
-    {label:"連夜協調作者改稿、延後上市", delta:{money:-5, d:-3, fame:4}},
-    {label:"時間來不及，先印再說之後勘誤", delta:{fame:pick([-8,2])}}
+    {label:"連夜協調作者改稿、延後上市", delta:{money:-5, d:-3, fame:4}, style:"safe",
+      result:"延後上市的成本不小，但這本書後來因為考據紮實得到不少好評。"},
+    {label:"時間來不及，先印再說之後勘誤", delta:{fame:pick([-8,2])}, style:"bold",
+      result:"賭了一把讓它先印出去，事後的反應好壞參半。"}
   ]}),
 
 EV({id:"royalty_error", paths:["editor"], title:"版稅對帳單算錯了",
   desc:function(p){ return "電子書平台的版稅對帳單出現離奇落差，作者寄來措辭嚴厲的信件要求"+p.name+"說清楚。"; },
   choices:[
-    {label:"徹夜核對報表，找出系統錯誤", delta:{d:-6, c:3}},
-    {label:"先安撫作者，慢慢查", delta:{c:-2, d:-2}}
+    {label:"徹夜核對報表，找出系統錯誤", delta:{d:-6, c:3}, style:"bold",
+      result:"熬夜查出平台系統的計算漏洞，作者後來還特地寫信道謝。"},
+    {label:"先安撫作者，慢慢查", delta:{c:-2, d:-2}, style:"safe",
+      result:"安撫是安撫了，但作者對這段合作關係，多少留了個心結。"}
   ]}),
 
 EV({id:"public_called_out", paths:["editor"], title:"被作者公開點名開嗆",
   desc:function(p){ return "一位合作作者在社群上公開發文，指控"+p.name+"「不尊重創作」，底下瞬間湧入圍觀群眾。"; },
   choices:[
-    {label:"私訊約對方好好談", delta:{c:3, d:-4}},
-    {label:"公開發聲明反駁", delta:{fame:-5, d:-6}}
+    {label:"私訊約對方好好談", delta:{c:3, d:-4}, style:"safe",
+      result:"私下談開之後，對方後來刪了那則發文，關係算是修復了一半。"},
+    {label:"公開發聲明反駁", delta:{fame:-5, d:-6}, style:"bold",
+      result:"聲明一發，戰火反而燒得更旺，這件事在業界流傳了好一陣子。"}
   ]}),
 
 EV({id:"layoffs", paths:["editor"], stageMin:2, title:"裁員潮",
   desc:function(p){ return "公司宣布組織重整，"+p.name+"的部門被點名「效益檢討」，會議室的燈那天特別亮。"; },
   choices:[
-    {label:"主動提出貢獻報告、爭取留下", delta:{d:-5, b:4}},
-    {label:"開始默默投履歷", delta:{c:3, d:-2}}
+    {label:"主動提出貢獻報告、爭取留下", delta:{d:-5, b:4}, style:"bold",
+      result:"報告做得扎實，這次總算是保住了位置。"},
+    {label:"開始默默投履歷", delta:{c:3, d:-2}, style:"safe",
+      result:"履歷投出去後心裡踏實不少，至少手上多留了一條退路。"}
   ]}),
 
 EV({id:"moonlight", paths:["editor"], stageMin:2, title:"偷偷接的外稿",
   desc:function(p){ return p.name+"利用下班時間偷偷接了外面的接案編輯工作貼補家用，只希望別被老闆發現。"; },
   choices:[
-    {label:"低調做，多賺一點是一點", delta:{money:8, d:-5}},
-    {label:"覺得風險太高，婉拒了", delta:{d:2}}
+    {label:"低調做，多賺一點是一點", delta:{money:8, d:-5}, style:"bold",
+      result:"外快進帳確實有感，但下班後的時間幾乎沒有留給自己。"},
+    {label:"覺得風險太高，婉拒了", delta:{d:2}, style:"safe",
+      result:"婉拒之後睡得比較安穩，只是看著多出來的帳單，還是有點心動過。"}
+  ]}),
+
+EV({id:"author_poached", paths:["editor"], stageMin:2,
+  title:"心愛的作者被挖角",
+  desc:function(p){ return p.name+"一手栽培多年的作者，被對家出版社用高額預付金挖走，連招呼都沒打一聲。"; },
+  choices:[
+    {label:"打電話關心，體面道別", delta:{c:4, d:-3}, style:"safe",
+      result:"體面地道了別，這個作者後來在受訪時，還是提到了當年帶他入行的人。"},
+    {label:"心裡記一筆帳，從此不再多說", delta:{d:-5, fame:2}, style:"bold",
+      result:"這筆帳記在心裡，業界後來都知道這件事，多少添了幾分「別亂來」的形象。"}
+  ]}),
+
+EV({id:"budget_cut", paths:["editor"], repeat:true, stageMin:2,
+  title:"選書預算被砍半",
+  desc:function(p){ return stale("選書預算被砍半", [
+    "年度會議上，"+p.name+"的選書預算被無預警砍半，理由是「先撐過這一季再說」。",
+    "預算又被砍了一輪，"+p.name+"已經開始習慣用更少的錢做選書決定。",
+    "這是連續第三次砍預算，"+p.name+"對「先撐過這一季」這句話免疫了。"
+  ]); },
+  choices:[
+    {label:"改找中小型、風險較低的案子", delta:{b:4, fame:-2}, style:"safe",
+      result:"保守一點的選題，安全是安全，但總覺得少了點驚喜。"},
+    {label:"硬是保留一本理想中的書", delta:{money:-6, d:-3}, style:"bold",
+      result:"為了那本書多爭取了一點空間，代價是自己那份預算幾乎見底。"}
   ]}),
 
 /* ---------- marketing ---------- */
 EV({id:"kol_leak", paths:["marketing"], title:"業配網紅偷渡私貨",
   desc:function(p){ return p.name+"砸預算邀來的網紅業配，貼文卻夾帶對競品出版社的暗酸，留言區戰成一團。"; },
   choices:[
-    {label:"立刻聯繫網紅下架修正", delta:{money:-6, d:-4}},
-    {label:"順勢炒話題，蹭聲量", delta:{fame:9, c:-3}}
+    {label:"立刻聯繫網紅下架修正", delta:{money:-6, d:-4}, style:"safe",
+      result:"下架修正得算快，風波沒有燒太大，只是這筆預算算是白花了一半。"},
+    {label:"順勢炒話題，蹭聲量", delta:{fame:9, c:-3}, style:"bold",
+      result:"聲量確實衝上去了，但競品出版社那邊，關係算是徹底鬧僵。"}
   ]}),
 
 EV({id:"visual_plagiarism", paths:["marketing"], title:"主視覺被抓包抄襲",
   desc:function(p){ return "新書發表會前一天，有網友指出"+p.name+"團隊設計的主視覺，跟國外某海報「巧合地」相似。"; },
   choices:[
-    {label:"連夜換掉視覺、公開致歉", delta:{money:-8, d:-4}},
-    {label:"辯稱純屬致敬，硬撐活動照辦", delta:{fame:pick([-10,3])}}
+    {label:"連夜換掉視覺、公開致歉", delta:{money:-8, d:-4}, style:"safe",
+      result:"連夜換稿雖然狼狽，但誠懇的致歉讓話題很快降溫。"},
+    {label:"辯稱純屬致敬，硬撐活動照辦", delta:{fame:pick([-10,3])}, style:"bold",
+      result:"硬撐的說法沒有完全說服大家，這件事後來變成職涯裡一段常被提起的黑歷史。", flag:"prDisaster"}
   ]}),
 
 EV({id:"meme_viral", paths:["marketing"], title:"迷因帳號意外爆紅",
   desc:function(p){ return p.name+"隨手做的一張書摘迷因圖，一夜之間被轉發上萬次，編輯部的電話被打爆。"; },
   choices:[
-    {label:"趁勝追擊，加開限量周邊", delta:{money:10, fame:10, d:-3}},
-    {label:"保守應對，怕曇花一現後被檢視", delta:{fame:5, d:2}}
+    {label:"趁勝追擊，加開限量周邊", delta:{money:10, fame:10, d:-3}, style:"bold",
+      result:"周邊上架後秒殺，這波流量總算被實實在在地變成了業績。"},
+    {label:"保守應對，怕曇花一現後被檢視", delta:{fame:5, d:2}, style:"safe",
+      result:"保守處理讓熱度平穩落地，雖然少賺了一波，但也沒留下把柄。"}
   ]}),
 
 EV({id:"kol_greedy", paths:["marketing"], repeat:true, title:"獅子大開口的業配報價",
-  desc:function(p){ return "談了三週的合作網紅，臨時把報價翻了三倍，理由是「我現在漲粉很快」。"; },
+  desc:function(p){ return stale("獅子大開口的業配報價", [
+    "談了三週的合作網紅，臨時把報價翻了三倍，理由是「我現在漲粉很快」。",
+    "又一個網紅在簽約前臨時加價，"+p.name+"已經開始習慣這種談判節奏。",
+    "這次的網紅報價開得更誇張，"+p.name+"連討價還價的力氣都快沒了。"
+  ]); },
   choices:[
-    {label:"忍痛付錢，怕錯過宣傳期", delta:{money:-14, fame:6}},
-    {label:"直接放棄合作，另找對象", delta:{c:-2, money:2}}
+    {label:"忍痛付錢，怕錯過宣傳期", delta:{money:-14, fame:6}, style:"bold",
+      result:"預算是燒了不少，但宣傳期確實沒錯過，話題熱度算是保住了。"},
+    {label:"直接放棄合作，另找對象", delta:{c:-2, money:2}, style:"safe",
+      result:"放棄合作省下一筆錢，只是這個圈子小，後來再談合作明顯冷淡了些。"}
   ]}),
 
 EV({id:"rainy_presser", paths:["marketing"], repeat:true, title:"下著雨的記者會",
-  desc:function(p){ return "精心籌備三個月的記者會當天，外頭下著大雨，簽到簿上只有小貓兩三隻記者。"; },
+  desc:function(p){ return stale("下著雨的記者會", [
+    "精心籌備三個月的記者會當天，外頭下著大雨，簽到簿上只有小貓兩三隻記者。",
+    "又一場記者會撞上壞天氣，"+p.name+"開始懷疑自己是不是被氣象台針對。",
+    "這次"+p.name+"提前查了氣象預報，還是被臨時轉強的雨勢打了個措手不及。"
+  ]); },
   choices:[
-    {label:"臨場應變，改成線上直播補救", delta:{c:4, money:-4}},
-    {label:"硬著頭皮照原計畫進行", delta:{fame:-3, d:-3}}
+    {label:"臨場應變，改成線上直播補救", delta:{c:4, money:-4}, style:"bold",
+      result:"臨時架起的直播意外多了一批線上觀眾，算是因禍得福。"},
+    {label:"硬著頭皮照原計畫進行", delta:{fame:-3, d:-3}, style:"safe",
+      result:"照原計畫辦完，稀稀落落的簽到簿還是讓人心裡有點涼。"}
   ]}),
 
 EV({id:"burnout_sm", paths:["marketing"], title:"連續爆肝三個月的小編",
   desc:function(p){ return p.name+"連續三個月每天緊盯後台數據到半夜，某天手滑把負面留言誤發成官方發文，瞬間衝上熱搜。"; },
   choices:[
-    {label:"迅速公關滅火、誠懇道歉", delta:{fame:-5, d:-6}},
-    {label:"直接請假，讓同事代打", delta:{d:6, fame:-8}}
+    {label:"迅速公關滅火、誠懇道歉", delta:{fame:-5, d:-6}, style:"safe",
+      result:"滅火滅得算快，話題沒有燒太久，但那幾天的心跳應該破表了。"},
+    {label:"直接請假，讓同事代打", delta:{d:6, fame:-8}, style:"bold",
+      result:"請假休息確實回了血，只是這件事最後還是被同業拿來當茶餘飯後的話題。"}
   ]}),
 
 EV({id:"ad_burn", paths:["marketing"], repeat:true, stageMin:2, title:"廣告投放燒錢事件",
-  desc:function(p){ return "數據顯示這波廣告投放的轉換率慘不忍睹，"+p.name+"看著燒掉的預算，主管的臉色比報表還難看。"; },
+  desc:function(p){ return stale("廣告投放燒錢事件", [
+    "數據顯示這波廣告投放的轉換率慘不忍睹，"+p.name+"看著燒掉的預算，主管的臉色比報表還難看。",
+    "又一波廣告投放效果不如預期，"+p.name+"開始懷疑演算法是不是跟自己過不去。",
+    "這次的廣告數據依然難看，"+p.name+"對「再測一輪就好」這句話愈來愈沒信心。"
+  ]); },
   choices:[
-    {label:"即時喊停、重新調整受眾", delta:{money:-6, b:5}},
-    {label:"賭一把繼續燒到底", delta:{money:-16, fame:pick([8,0])}}
+    {label:"即時喊停、重新調整受眾", delta:{money:-6, b:5}, style:"safe",
+      result:"即時喊停止損，重新調整過的下一波，數據明顯好看不少。"},
+    {label:"賭一把繼續燒到底", delta:{money:-16, fame:pick([8,0])}, style:"bold",
+      result:"賭注開出來的結果只能說碰運氣，"+"預算表上的數字倒是很誠實。"}
   ]}),
 
 EV({id:"campaign_hit", paths:["marketing"], stageMin:2, title:"意外做出年度爆款企劃",
   desc:function(p){ return p.name+"隨手發想的一個小企劃，被總編轉發後意外成為全年討論度最高的行銷案例。"; },
   choices:[
-    {label:"整理成方法論，對外分享", delta:{fame:10, c:6}},
-    {label:"低調收下成果，繼續埋頭做事", delta:{fame:4, d:3}}
+    {label:"整理成方法論，對外分享", delta:{fame:10, c:6}, style:"bold",
+      result:"分享出去的方法論被不少同業引用，這個名字開始在圈子裡被記住。"},
+    {label:"低調收下成果，繼續埋頭做事", delta:{fame:4, d:3}, style:"safe",
+      result:"低調地把成果收下，雖然沒有大肆宣傳，但心裡的踏實感是真的。"}
+  ]}),
+
+EV({id:"boycott_adjacent", paths:["marketing"], stageMin:2,
+  title:"合作網紅被連坐抵制",
+  desc:function(p){ return p.name+"主打的行銷案，合作網紅被爆出跟另一樁醜聞有牽連，新書還沒上市就被讀者要求「連坐抵制」。"; },
+  choices:[
+    {label:"緊急切割、公開撤下合作內容", delta:{money:-10, fame:-4}, style:"safe",
+      result:"切割得算快，損失止住了，只是這批預算等於是打了水漂。"},
+    {label:"觀望，賭風波很快過去", delta:{fame:pick([-12,2])}, style:"bold",
+      result:"賭注的結果不好說，這陣子都在留意風向有沒有轉。", flag:"prDisaster"}
+  ]}),
+
+EV({id:"algorithm_change", paths:["marketing"], repeat:true, stageMin:2,
+  title:"演算法一夜大改",
+  desc:function(p){ return stale("演算法一夜大改", [
+    "社群平台一夜之間改了演算法，"+p.name+"上一檔還好好的貼文觸及率，這檔直接腰斬。",
+    "演算法又雙叒改了，"+p.name+"開始覺得自己在追一個永遠追不上的東西。",
+    "這是今年第三次演算法大改，"+p.name+"乾脆把舊的打法筆記全部歸零重寫。"
+  ]); },
+  choices:[
+    {label:"重新研究打法，砸時間測試", delta:{b:5, d:-3}, style:"bold",
+      result:"測試出新打法後觸及率慢慢回穩，只是這幾週幾乎沒有喘息時間。"},
+    {label:"加碼買廣告，用錢換觸及", delta:{money:-8, fame:3}, style:"safe",
+      result:"花錢買到的觸及來得快，效果卻也跟著預算一起見底。"}
   ]}),
 
 /* ---------- translator ---------- */
 EV({id:"mt_pressure", paths:["translator"], repeat:true, stageMin:2, title:"「潤一下機翻就好」",
-  desc:function(p){ return "編輯來信，語氣輕鬆：「這本不趕，先機翻過一輪，你潤稿就好，費用可以照舊喔（其實打七折）。」"; },
+  desc:function(p){ return stale("「潤一下機翻就好」", [
+    "編輯來信，語氣輕鬆：「這本不趕，先機翻過一輪，你潤稿就好，費用可以照舊喔（其實打七折）。」",
+    "又一家編輯提出「潤機翻」的合作方式，"+p.name+"發現這已經快變成業界常態。",
+    "這次連報價單都直接把「機翻潤稿」列成正式項目，"+p.name+"盯著那一欄看了很久。"
+  ]); },
   choices:[
-    {label:"拒絕，翻譯不是校對機器的殘骸", delta:{a:6, money:-4}},
-    {label:"接受，先求案子別斷", delta:{money:8, d:-6}}
+    {label:"拒絕，翻譯不是校對機器的殘骸", delta:{a:6, money:-4}, style:"safe",
+      result:"拒絕後案子少了一些，但手上留下的都是真正需要翻譯功力的稿子。"},
+    {label:"接受，先求案子別斷", delta:{money:8, d:-6}, style:"bold",
+      result:"案子是接住了，"+"但潤稿的過程比重新翻譯還讓人心累。"}
   ]}),
 
 EV({id:"editor_nag", paths:["translator"], repeat:true, title:"每天傳訊息問進度的編輯",
-  desc:function(p){ return "編輯每天固定時間傳一句「翻得如何了呀」，"+p.name+"開始對那個訊息提示音產生生理反應。"; },
+  desc:function(p){ return stale("每天傳訊息問進度的編輯", [
+    "編輯每天固定時間傳一句「翻得如何了呀」，"+p.name+"開始對那個訊息提示音產生生理反應。",
+    "同一句「翻得如何了呀」又來了，"+p.name+"開始考慮要不要乾脆設個自動回覆。",
+    "這位編輯的追蹤頻率又提高了，"+p.name+"覺得自己好像在跟死線談戀愛。"
+  ]); },
   choices:[
-    {label:"誠實回報還差多少，附上時間表", delta:{d:3, c:2}},
-    {label:"已讀不回，先裝死", delta:{d:-8, c:-4}}
+    {label:"誠實回報還差多少，附上時間表", delta:{d:3, c:2}, style:"safe",
+      result:"誠實回報之後，編輯的追蹤訊息明顯少了，信任感是真的有累積起來。"},
+    {label:"已讀不回，先裝死", delta:{d:-8, c:-4}, style:"bold",
+      result:"裝死換來幾天清靜，但接下來要面對的訊息只會更急更多。"}
   ]}),
 
 EV({id:"author_nitpick", paths:["translator"], repeat:true, stageMin:2, title:"原作者龜毛審稿",
-  desc:function(p){ return "原文作者本人竟然懂中文，逐句對"+p.name+"的譯文提出「語氣不夠貼近原意」的修改意見，附件是一份密密麻麻的批註。"; },
+  desc:function(p){ return stale("原作者龜毛審稿", [
+    "原文作者本人竟然懂中文，逐句對"+p.name+"的譯文提出「語氣不夠貼近原意」的修改意見，附件是一份密密麻麻的批註。",
+    "這位作者的批註又來了，"+p.name+"開始習慣在每個句子後面預留討論空間。",
+    "第好幾輪的來回修改，"+p.name+"跟這位作者的默契，反而慢慢磨出來了。"
+  ]); },
   choices:[
-    {label:"耐心逐條溝通、來回討論", delta:{b:6, d:-3}},
-    {label:"直接照對方意見全改，不多爭辯", delta:{c:2, a:-2}}
+    {label:"耐心逐條溝通、來回討論", delta:{b:6, d:-3}, style:"safe",
+      result:"逐條討論很花時間，但譯文確實因此更貼近原作者想要的味道。"},
+    {label:"直接照對方意見全改，不多爭辯", delta:{c:2, a:-2}, style:"bold",
+      result:"全部照改省了不少力氣，只是心裡對某幾句的原意，始終有點意見。"}
   ]}),
 
 EV({id:"credit_missing", paths:["translator"], title:"版權頁沒印上你的名字",
   desc:function(p){ return "新書到貨，"+p.name+"翻開版權頁——譯者欄位是空的，只印了出版社的名字。"; },
   choices:[
-    {label:"據理力爭，要求再刷更正", delta:{c:-2, fame:4}},
-    {label:"算了，反正譯者本來就是隱形人", delta:{d:-4}}
+    {label:"據理力爭，要求再刷更正", delta:{c:-2, fame:4}, style:"bold",
+      result:"更正後再刷版總算補上了名字，只是這場交涉讓合作氣氛冷了一陣子。"},
+    {label:"算了，反正譯者本來就是隱形人", delta:{d:-4}, style:"safe",
+      result:"沒有爭取，這件事就這樣被吞了下去，成為又一個不被記得的名字。"}
   ]}),
 
 EV({id:"overbooked", paths:["translator"], repeat:true, title:"三份稿子同時撞上死線",
-  desc:function(p){ return p.name+"當初為了不斷案子，把三本書的交稿日排在同一週，此刻正對著行事曆懷疑人生。"; },
+  desc:function(p){ return stale("三份稿子同時撞上死線", [
+    p.name+"當初為了不斷案子，把三本書的交稿日排在同一週，此刻正對著行事曆懷疑人生。",
+    "又一次死線撞期，"+p.name+"開始懷疑自己是不是永遠學不會拒絕案子。",
+    "這次"+p.name+"其實有先算過行事曆，結果還是被臨時插進來的急件打亂。"
+  ]); },
   choices:[
-    {label:"熬夜硬拚，全部準時交出", delta:{a:4, d:-12}},
-    {label:"老實跟其中一家道歉延期", delta:{money:-8, c:-4}}
+    {label:"熬夜硬拚，全部準時交出", delta:{a:4, d:-12}, style:"bold",
+      result:"三份稿子全部準時交出，換來的是接下來好幾天完全提不起勁。"},
+    {label:"老實跟其中一家道歉延期", delta:{money:-8, c:-4}, style:"safe",
+      result:"延期換來喘息空間，只是那家出版社日後的合作機會，明顯變少了。"}
   ]}),
 
 EV({id:"mistranslation", paths:["translator"], title:"誤譯出包被抓包",
   desc:function(p){ return "有讀者發現"+p.name+"把一個關鍵術語譯錯，截圖附上原文對照瘋傳，留言區笑聲一片。"; },
   choices:[
-    {label:"公開認錯、附上勘誤表", delta:{d:-3, fame:pick([4,-6])}},
-    {label:"沉默不回應，等話題過去", delta:{fame:-8}}
+    {label:"公開認錯、附上勘誤表", delta:{d:-3, fame:pick([4,-6])}, style:"safe",
+      result:"認錯認得乾脆，反而讓一些讀者對這份坦承留下了印象。"},
+    {label:"沉默不回應，等話題過去", delta:{fame:-8}, style:"bold",
+      result:"沉默沒有讓話題真正過去，反而變成日後被翻出來的舊帳。"}
   ]}),
 
 EV({id:"translation_award", paths:["translator"], stageMin:2, weight:0.7,
@@ -704,212 +889,278 @@ EV({id:"translation_award", paths:["translator"], stageMin:2, weight:0.7,
   title:"入圍翻譯獎",
   desc:function(p){ return p.name+"翻譯的作品意外入圍一個小有份量的翻譯獎，得獎名單公布前，手機通知響個不停。"; },
   choices:[
-    {label:"準備得獎感言、出席頒獎典禮", delta:{fame:10, c:4}},
-    {label:"低調不去，怕最後沒得獎很尷尬", delta:{fame:3}}
+    {label:"準備得獎感言、出席頒獎典禮", delta:{fame:10, c:4}, style:"bold",
+      result:"典禮上第一次有陌生人叫得出自己的名字，那種感覺很不真實。"},
+    {label:"低調不去，怕最後沒得獎很尷尬", delta:{fame:3}, style:"safe",
+      result:"低調沒去現場，事後看轉播畫面，心裡多少有點小小的遺憾。"}
   ]}),
 
 EV({id:"vanish_temptation", paths:["translator"], weight:1.2, repeat:true,
   requires:function(p){ return p.stats.d<28; },
   title:"想消失三天的念頭",
-  desc:function(p){ return p.name+"盯著還剩三分之二沒譯完的稿子，第一次認真理解那些「人間蒸發」的前輩譯者——原來不是不負責任，是真的撐不住了。"; },
+  desc:function(p){ return stale("想消失三天的念頭", [
+    p.name+"盯著還剩三分之二沒譯完的稿子，第一次認真理解那些「人間蒸發」的前輩譯者——原來不是不負責任，是真的撐不住了。",
+    "這個念頭又浮現了，"+p.name+"發現自己愈來愈能理解「消失」這兩個字的重量。",
+    "第好幾次盯著沒譯完的稿子動彈不得，"+p.name+"知道自己已經走在懸崖邊上。"
+  ]); },
   choices:[
-    {label:"深呼吸，硬著頭皮把稿子生出來", delta:{d:5, a:-2}},
-    {label:"手機關機，先躲三天再說", delta:{money:-10, c:-10}, flag:"disappeared"}
+    {label:"深呼吸，硬著頭皮把稿子生出來", delta:{d:5, a:-2}, style:"safe",
+      result:"深呼吸幾次後總算把稿子擠出來，代價是文字明顯少了點光彩。"},
+    {label:"手機關機，先躲三天再說", delta:{money:-10, c:-10}, style:"bold", flag:"disappeared",
+      result:"手機關機的那三天，成了業界口中又一個「消失的譯者」。"}
   ]}),
 
 EV({id:"rate_haggle", paths:["translator"], repeat:true, title:"十年沒漲過的翻譯費",
-  desc:function(p){ return "出版社開出的千字翻譯費，"+p.name+"一算，居然跟十年前學生時代接的案子一樣。"; },
+  desc:function(p){ return stale("十年沒漲過的翻譯費", [
+    "出版社開出的千字翻譯費，"+p.name+"一算，居然跟十年前學生時代接的案子一樣。",
+    "又一份報價單開出同樣的老數字，"+p.name+"開始習慣自己嘆氣的頻率。",
+    "這次"+p.name+"乾脆懶得算了，反正結果大概也差不多。"
+  ]); },
   choices:[
-    {label:"據理力爭，爭取合理費率", delta:{money:6, c:-3}},
-    {label:"接受，先求有案子做", delta:{money:-4, d:-3}}
-  ]}),
-
-/* ---------- bookstore ---------- */
-EV({id:"indie_cry", paths:["store"], repeat:true, title:"隔壁書店老闆的抱怨大會",
-  desc:function(p){ return "巷口另一間獨立書店老闆約"+p.name+"喝酒，喝到一半突然紅了眼眶，哭訴「你們知道出版社在偷偷賺多少嗎，我們根本是義工」。"; },
-  choices:[
-    {label:"認真安慰，順便交換進貨情報", delta:{c:5, d:-2}},
-    {label:"苦笑帶過，各自回家算帳", delta:{d:2}}
-  ]}),
-
-EV({id:"rent_hike", paths:["store"], title:"房東調漲租金三成",
-  desc:function(p){ return "房東一通電話通知"+p.name+"，租約續簽要調漲三成，理由是「這一帶現在很夯」。"; },
-  choices:[
-    {label:"忍痛簽下，搬家成本更高", delta:{money:-14, d:-3}},
-    {label:"認真找新址，寧可搬遷", delta:{money:-8, c:3, d:-5}}
-  ]}),
-
-EV({id:"chain_next_door", paths:["store"], title:"隔壁開了連鎖書店",
-  desc:function(p){ return "一間連鎖書店大型分店，就這樣開在"+p.name+"店面斜對面，開幕當天大排長龍。"; },
-  choices:[
-    {label:"主打選書品味與策展差異化", delta:{a:6, fame:4}},
-    {label:"跟進打折促銷，硬拚價格戰", delta:{money:-10, fame:2}}
-  ]}),
-
-EV({id:"empty_talk", paths:["store"], repeat:true, title:"冷場的講座",
-  desc:function(p){ return "精心邀來的講者站上台，台下椅子卻只坐了店貓和"+p.name+"自己。"; },
-  choices:[
-    {label:"當作練習，事後檢討宣傳方式", delta:{b:4, d:-2}},
-    {label:"自我安慰：品質比人數重要", delta:{d:3}}
-  ]}),
-
-EV({id:"discount_war", paths:["store"], repeat:true, title:"電商折扣戰開打",
-  desc:function(p){ return "電商平台祭出全館 79 折，"+p.name+"店裡的定價書架前，讀者只是拍照比價後默默離開。"; },
-  choices:[
-    {label:"推出「只有這裡買得到」的選品策展", delta:{a:5, money:-4}},
-    {label:"苦撐硬拚，不跟不折", delta:{d:-6, money:-6}}
-  ]}),
-
-EV({id:"landmark", paths:["store"], stageMin:2, title:"意外爆紅的打卡地標",
-  desc:function(p){ return "一位旅遊部落客隨手拍的一張店內照片爆紅，"+p.name+"的店突然湧入大批只想拍照的觀光客。"; },
-  choices:[
-    {label:"順勢推出限定周邊、把流量變業績", delta:{money:12, fame:8, d:-3}},
-    {label:"婉拒商業化，保留書店的初心", delta:{fame:5, a:3}}
-  ]}),
-
-EV({id:"community_market", paths:["store"], repeat:true, title:"里長邀請合辦市集",
-  desc:function(p){ return "社區里長找上"+p.name+"，提議在店門口合辦小型市集，「順便幫忙帶點人氣」。"; },
-  choices:[
-    {label:"答應，多接觸在地居民", delta:{c:6, money:-2}},
-    {label:"婉拒，怕影響日常營運", delta:{d:2}}
-  ]}),
-
-EV({id:"flood", paths:["store"], title:"淹水的那個颱風夜",
-  desc:function(p){ return "一場豪雨讓店裡淹水，"+p.name+"半夜衝回店裡，看著泡水的書架，久久說不出話。"; },
-  choices:[
-    {label:"申請補助、盤點損失重新開張", delta:{money:-18, d:-6}},
-    {label:"自認倒楣，默默扛下所有損失", delta:{money:-24, d:-3}}
-  ]}),
-
-EV({id:"lowered_back", paths:["store"], weight:1.4, repeat:true,
-  requires:function(p){ return p.stats.d<28; },
-  title:"搬書閃到腰",
-  desc:function(p){ return p.name+"體力早就亮紅燈，這天彎腰搬一箱新書時，腰「啪」一聲，整間店只剩"+p.name+"倒抽一口氣的聲音。"; },
-  choices:[
-    {label:"去看醫生、乖乖休養", delta:{money:-6, d:6}},
-    {label:"貼個藥膏繼續撐，店不能關", delta:{d:-10, money:2}}
-  ]}),
-
-EV({id:"low_social", paths:["store"], weight:1.2, repeat:true,
-  requires:function(p){ return p.stats.c<20; },
-  title:"社交存款見底",
-  desc:function(p){ return "出版社業務又來訪，"+p.name+"因為前幾次應對太過冷淡，對方這次直接站在門口沒進來，隔著玻璃揮揮手就走了。"; },
-  choices:[
-    {label:"痛定思痛，練習寒暄與應對", delta:{c:8, d:-2}},
-    {label:"無所謂，反正書自己會賣", delta:{c:-4, fame:-2}}
-  ]}),
-
-EV({id:"showrooming", paths:["store"], repeat:true, title:"拍照比價的顧客",
-  desc:function(p){ return "一位顧客在架前翻了十分鐘，拿起手機對著書封拍照，轉頭跟朋友說「等等上網買就好，博客來有打折」，然後把書放回架上，空手走了。"; },
-  choices:[
-    {label:"上前搭話，聊聊這本書、順便推薦別的選書", delta:{c:4, a:3}},
-    {label:"什麼都不說，默默把書擺回原位", delta:{d:-3, fame:-1}}
-  ]}),
-
-EV({id:"no_creativity", paths:["store"], weight:1.3, repeat:true,
-  requires:function(p){ return p.stats.b<22; },
-  title:"「你這裡跟博客來有什麼不一樣？」",
-  desc:function(p){ return "一位熟客翻著跟連鎖通路一模一樣的暢銷排行榜書堆，直白地問"+p.name+"：「你賣的書跟博客來都一樣，我幹嘛要來你這邊消費？」"+p.name+"一時語塞。"; },
-  choices:[
-    {label:"痛定思痛，重新規劃選書與策展主題", delta:{b:9, money:-4}},
-    {label:"苦笑帶過，先把這句話記在心裡", delta:{d:-4, fame:-2}}
-  ]}),
-
-/* ---------- extra depth ---------- */
-EV({id:"salary_freeze", repeat:true,
-  title:"今年，加薪這件事又沒了下文",
-  desc:function(p){ return "年度考核會議上，主管一句「今年產業環境不好」，就把加薪這個話題輕輕帶過。"+p.name+"看著同樣的數字連續第三年沒動。"; },
-  choices:[
-    {label:"據理力爭，至少要個說法", delta:{c:-2, money:4}},
-    {label:"認了，反正吵也沒用", delta:{d:-4}}
-  ]}),
-
-EV({id:"office_gossip", repeat:true,
-  title:"尾牙上的耳語",
-  desc:function(p){ return "尾牙散場後的續攤場合，酒過三巡，"+p.name+"聽到不少業界八卦——誰家又要倒了、誰又跳槽去對家，真真假假難以分辨。"; },
-  choices:[
-    {label:"認真記下來，人脈就是這樣養成的", delta:{c:5, d:-2}},
-    {label:"聽聽就好，早點回家休息", delta:{d:3}}
-  ]}),
-
-EV({id:"ghostwriting_offer", paths:["author"], stageMin:2,
-  title:"一份不能掛名的代筆邀約",
-  desc:function(p){ return "一位企業家想找"+p.name+"代筆寫自傳，價碼優渥，唯一條件是：封面只能印企業家的名字。"; },
-  choices:[
-    {label:"接下，先解決現實問題", delta:{money:20, fame:-3, d:-4}},
-    {label:"婉拒，這不是想留下的名字", delta:{d:3, a:2}}
-  ]}),
-
-EV({id:"content_farm_beef", paths:["author"], stageMin:1,
-  title:"讀書會被抓包內容農場化",
-  desc:function(p){ return p.name+"經營的線上讀書會，被眼尖網友發現大量貼文其實是農場文章改寫，"+p.name+"這才知道小編偷懶抄了捷徑。"; },
-  choices:[
-    {label:"公開切割、換掉小編", delta:{fame:-4, money:-3}},
-    {label:"低調處理，內部警告就好", delta:{fame:-6, c:-2}}
-  ]}),
-
-EV({id:"author_poached", paths:["editor"], stageMin:2,
-  title:"心愛的作者被挖角",
-  desc:function(p){ return p.name+"一手栽培多年的作者，被對家出版社用高額預付金挖走，連招呼都沒打一聲。"; },
-  choices:[
-    {label:"打電話關心，體面道別", delta:{c:4, d:-3}},
-    {label:"心裡記一筆帳，從此不再多說", delta:{d:-5, fame:2}}
-  ]}),
-
-EV({id:"budget_cut", paths:["editor"], repeat:true, stageMin:2,
-  title:"選書預算被砍半",
-  desc:function(p){ return "年度會議上，"+p.name+"的選書預算被無預警砍半，理由是「先撐過這一季再說」。"; },
-  choices:[
-    {label:"改找中小型、風險較低的案子", delta:{b:4, fame:-2}},
-    {label:"硬是保留一本理想中的書", delta:{money:-6, d:-3}}
-  ]}),
-
-EV({id:"boycott_adjacent", paths:["marketing"], stageMin:2,
-  title:"合作網紅被連坐抵制",
-  desc:function(p){ return p.name+"主打的行銷案，合作網紅被爆出跟另一樁醜聞有牽連，新書還沒上市就被讀者要求「連坐抵制」。"; },
-  choices:[
-    {label:"緊急切割、公開撤下合作內容", delta:{money:-10, fame:-4}},
-    {label:"觀望，賭風波很快過去", delta:{fame:pick([-12,2])}}
-  ]}),
-
-EV({id:"algorithm_change", paths:["marketing"], repeat:true, stageMin:2,
-  title:"演算法一夜大改",
-  desc:function(p){ return "社群平台一夜之間改了演算法，"+p.name+"上一檔還好好的貼文觸及率，這檔直接腰斬。"; },
-  choices:[
-    {label:"重新研究打法，砸時間測試", delta:{b:5, d:-3}},
-    {label:"加碼買廣告，用錢換觸及", delta:{money:-8, fame:3}}
+    {label:"據理力爭，爭取合理費率", delta:{money:6, c:-3}, style:"bold",
+      result:"力爭之後費率確實漲了一點，只是這家編輯之後聯絡明顯變少了。"},
+    {label:"接受，先求有案子做", delta:{money:-4, d:-3}, style:"safe",
+      result:"接受了老價碼，案子是穩住了，心裡那口氣卻一直沒地方出。"}
   ]}),
 
 EV({id:"co_translator_conflict", paths:["translator"], stageMin:2,
   title:"跟共譯者吵起來了",
   desc:function(p){ return p.name+"跟共同翻譯這本書的夥伴，為了譯名風格該統一成哪一派，在訊息群組裡吵得不可開交。"; },
   choices:[
-    {label:"提出折衷方案，各退一步", delta:{c:4, d:-3}},
-    {label:"堅持己見，寧可鬧僵也不將就", delta:{a:3, c:-6}}
+    {label:"提出折衷方案，各退一步", delta:{c:4, d:-3}, style:"safe",
+      result:"折衷方案讓兩人都能接受，合作關係總算沒有徹底鬧翻。"},
+    {label:"堅持己見，寧可鬧僵也不將就", delta:{a:3, c:-6}, style:"bold",
+      result:"堅持之後譯文風格確實更統一，只是這位夥伴後來再也沒找過自己合作。"}
   ]}),
 
 EV({id:"publisher_ghosts", paths:["translator"], stageMin:2,
   title:"出版社簽約後消失了",
   desc:function(p){ return p.name+"交稿三個月後，尾款遲遲沒進帳，聯絡窗口的信箱開始退信，公司電話也打不通——出版社比稿子還先「殺青」。"; },
   choices:[
-    {label:"提告或申訴，能爭一點是一點", delta:{money:4, d:-6}},
-    {label:"認賠，把力氣留給下一份案子", delta:{money:-10, d:-2}}
+    {label:"提告或申訴，能爭一點是一點", delta:{money:4, d:-6}, style:"bold",
+      result:"申訴的過程漫長又消耗，最後只爭回一小部分尾款。"},
+    {label:"認賠，把力氣留給下一份案子", delta:{money:-10, d:-2}, style:"safe",
+      result:"認賠之後心情反而輕鬆一點，至少不用再天天盯著那個已讀不回的信箱。"}
+  ]}),
+
+/* ---------- bookstore ---------- */
+EV({id:"indie_cry", paths:["store"], repeat:true, title:"隔壁書店老闆的抱怨大會",
+  desc:function(p){ return stale("隔壁書店老闆的抱怨大會", [
+    "巷口另一間獨立書店老闆約"+p.name+"喝酒，喝到一半突然紅了眼眶，哭訴「你們知道出版社在偷偷賺多少嗎，我們根本是義工」。",
+    "又是那位老闆約喝酒，"+p.name+"這次多少猜得到接下來要聽的內容。",
+    "這次換"+p.name+"主動約了那位老闆，兩人的抱怨大會，早就變成一種固定儀式。"
+  ]); },
+  choices:[
+    {label:"認真安慰，順便交換進貨情報", delta:{c:5, d:-2}, style:"safe",
+      result:"安慰完之後換來一些實用的進貨情報，這場酒局算是值得。"},
+    {label:"苦笑帶過，各自回家算帳", delta:{d:2}, style:"bold",
+      result:"苦笑帶過，各自回家繼續面對自己的帳本，日子還是要過。"}
+  ]}),
+
+EV({id:"rent_hike", paths:["store"], title:"房東調漲租金三成",
+  desc:function(p){ return "房東一通電話通知"+p.name+"，租約續簽要調漲三成，理由是「這一帶現在很夯」。"; },
+  choices:[
+    {label:"忍痛簽下，搬家成本更高", delta:{money:-14, d:-3}, style:"safe",
+      result:"忍痛簽下新約，帳面壓力更大了，但至少不用面對搬家的折騰。"},
+    {label:"認真找新址，寧可搬遷", delta:{money:-8, c:3, d:-5}, style:"bold",
+      result:"搬遷的過程折騰不小，新店面倒是意外談到不錯的條件。"}
+  ]}),
+
+EV({id:"chain_next_door", paths:["store"], title:"隔壁開了連鎖書店",
+  desc:function(p){ return "一間連鎖書店大型分店，就這樣開在"+p.name+"店面斜對面，開幕當天大排長龍。"; },
+  choices:[
+    {label:"主打選書品味與策展差異化", delta:{a:6, fame:4}, style:"safe",
+      result:"差異化的策展路線慢慢養出一批死忠客人，連鎖書店的人潮反而幫忙帶了路過客。"},
+    {label:"跟進打折促銷，硬拚價格戰", delta:{money:-10, fame:2}, style:"bold",
+      result:"價格戰打下來現金流很吃緊，開始意識到這場仗根本打不起。"}
+  ]}),
+
+EV({id:"empty_talk", paths:["store"], repeat:true, title:"冷場的講座",
+  desc:function(p){ return stale("冷場的講座", [
+    "精心邀來的講者站上台，台下椅子卻只坐了店貓和"+p.name+"自己。",
+    "又一場講座冷場，"+p.name+"開始懷疑是不是自己選的題目太小眾。",
+    "這次的講座依然冷清，"+p.name+"倒是跟講者混熟到可以一起吐槽了。"
+  ]); },
+  choices:[
+    {label:"當作練習，事後檢討宣傳方式", delta:{b:4, d:-2}, style:"safe",
+      result:"檢討過後調整了宣傳方式，下一場的人數確實好看了一點。"},
+    {label:"自我安慰：品質比人數重要", delta:{d:3}, style:"bold",
+      result:"自我安慰完，心情倒是意外地平靜下來。"}
+  ]}),
+
+EV({id:"discount_war", paths:["store"], repeat:true, title:"電商折扣戰開打",
+  desc:function(p){ return stale("電商折扣戰開打", [
+    "電商平台祭出全館 79 折，"+p.name+"店裡的定價書架前，讀者只是拍照比價後默默離開。",
+    "電商又一波折扣戰開打，"+p.name+"對著定價書架，已經沒那麼容易心慌了。",
+    "折扣戰打到這個地步，"+p.name+"乾脆不再去看那些比價網站的數字。"
+  ]); },
+  choices:[
+    {label:"推出「只有這裡買得到」的選品策展", delta:{a:5, money:-4}, style:"safe",
+      result:"策展主題確實吸引到一批專程而來的客人，只是投入的心力沒少花。"},
+    {label:"苦撐硬拚，不跟不折", delta:{d:-6, money:-6}, style:"bold",
+      result:"硬撐著沒跟折扣，帳面壓力愈來愈大，開始重新盤算下一步。"}
+  ]}),
+
+EV({id:"landmark", paths:["store"], stageMin:2, title:"意外爆紅的打卡地標",
+  desc:function(p){ return "一位旅遊部落客隨手拍的一張店內照片爆紅，"+p.name+"的店突然湧入大批只想拍照的觀光客。"; },
+  choices:[
+    {label:"順勢推出限定周邊、把流量變業績", delta:{money:12, fame:8, d:-3}, style:"bold",
+      result:"周邊上架後銷售亮眼，流量總算實實在在地變成了業績。"},
+    {label:"婉拒商業化，保留書店的初心", delta:{fame:5, a:3}, style:"safe",
+      result:"沒有商業化，這波熱潮慢慢退去，但留下來的讀者，是真心喜歡這間店的人。"}
+  ]}),
+
+EV({id:"community_market", paths:["store"], repeat:true, title:"里長邀請合辦市集",
+  desc:function(p){ return stale("里長邀請合辦市集", [
+    "社區里長找上"+p.name+"，提議在店門口合辦小型市集，「順便幫忙帶點人氣」。",
+    "里長又來邀約辦市集了，"+p.name+"跟他已經培養出一套固定的合作默契。",
+    "這次的市集邀約，里長還特地帶了鄰居的水果來，"+p.name+"很難拒絕這種人情。"
+  ]); },
+  choices:[
+    {label:"答應，多接觸在地居民", delta:{c:6, money:-2}, style:"safe",
+      result:"市集辦下來，跟在地居民的關係確實親近了不少。"},
+    {label:"婉拒，怕影響日常營運", delta:{d:2}, style:"bold",
+      result:"婉拒之後日常營運沒受影響，只是跟里長的關係，多少淡了一點。"}
+  ]}),
+
+EV({id:"flood", paths:["store"], title:"淹水的那個颱風夜",
+  desc:function(p){ return "一場豪雨讓店裡淹水，"+p.name+"半夜衝回店裡，看著泡水的書架，久久說不出話。"; },
+  choices:[
+    {label:"申請補助、盤點損失重新開張", delta:{money:-18, d:-6}, style:"safe",
+      result:"補助申請下來多少緩解了壓力，重新開張那天，老讀者都來幫忙搬書。"},
+    {label:"自認倒楣，默默扛下所有損失", delta:{money:-24, d:-3}, style:"bold",
+      result:"自己扛下所有損失，帳面數字很難看，但也少了申請流程的折騰。"}
+  ]}),
+
+EV({id:"lowered_back", paths:["store"], weight:1.4, repeat:true,
+  requires:function(p){ return p.stats.d<28; },
+  title:"搬書閃到腰",
+  desc:function(p){ return stale("搬書閃到腰", [
+    p.name+"體力早就亮紅燈，這天彎腰搬一箱新書時，腰「啪」一聲，整間店只剩"+p.name+"倒抽一口氣的聲音。",
+    "腰又閃了一次，"+p.name+"開始懷疑自己的身體是不是在抗議。",
+    "這已經是常態了，"+p.name+"搬書前都會先深呼吸一口氣，祈禱這次不要出事。"
+  ]); },
+  choices:[
+    {label:"去看醫生、乖乖休養", delta:{money:-6, d:6}, style:"safe",
+      result:"乖乖休養之後身體確實好轉了些，只是店裡的事沒少堆積。"},
+    {label:"貼個藥膏繼續撐，店不能關", delta:{d:-10, money:2}, style:"bold",
+      result:"貼著藥膏硬撐下去，店是沒關，身體卻在悄悄記帳。"}
+  ]}),
+
+EV({id:"low_social", paths:["store"], weight:1.2, repeat:true,
+  requires:function(p){ return p.stats.c<20; },
+  title:"社交存款見底",
+  desc:function(p){ return stale("社交存款見底", [
+    "出版社業務又來訪，"+p.name+"因為前幾次應對太過冷淡，對方這次直接站在門口沒進來，隔著玻璃揮揮手就走了。",
+    "又一位業務隔著玻璃揮揮手就走了，"+p.name+"開始意識到自己的社交存款有多見底。",
+    "這次連熟識的業務都繞過"+p.name+"的店，直接送貨到隔壁。"
+  ]); },
+  choices:[
+    {label:"痛定思痛，練習寒暄與應對", delta:{c:8, d:-2}, style:"safe",
+      result:"練習寒暄之後，業務們的態度慢慢回溫，訂貨也順暢了一些。"},
+    {label:"無所謂，反正書自己會賣", delta:{c:-4, fame:-2}, style:"bold",
+      result:"無所謂的態度換來的是愈來愈少人願意主動聯繫。"}
+  ]}),
+
+EV({id:"showrooming", paths:["store"], repeat:true, title:"拍照比價的顧客",
+  desc:function(p){ return stale("拍照比價的顧客", [
+    "一位顧客在架前翻了十分鐘，拿起手機對著書封拍照，轉頭跟朋友說「等等上網買就好，博客來有打折」，然後把書放回架上，空手走了。",
+    "又一位顧客拿著手機比價後空手離開，"+p.name+"已經能一眼看出這種顧客的行為模式。",
+    "這種拍照比價的場景，"+p.name+"這個月至少見了第三次。"
+  ]); },
+  choices:[
+    {label:"上前搭話，聊聊這本書、順便推薦別的選書", delta:{c:4, a:3}, style:"safe",
+      result:"搭話之後對方反而留下來聊了一會兒，最後真的買了一本不一樣的書。"},
+    {label:"什麼都不說，默默把書擺回原位", delta:{d:-3, fame:-1}, style:"bold",
+      result:"默默把書擺回原位，這種無力感，已經有點習慣了。"}
+  ]}),
+
+EV({id:"no_creativity", paths:["store"], weight:1.3, repeat:true,
+  requires:function(p){ return p.stats.b<22; },
+  title:"「你這裡跟博客來有什麼不一樣？」",
+  desc:function(p){ return stale("「你這裡跟博客來有什麼不一樣？」", [
+    "一位熟客翻著跟連鎖通路一模一樣的暢銷排行榜書堆，直白地問"+p.name+"：「你賣的書跟博客來都一樣，我幹嘛要來你這邊消費？」"+p.name+"一時語塞。",
+    "又一位客人問了同樣的問題，"+p.name+"這次連反駁的力氣都提不太起來。",
+    "這句話"+p.name+"已經聽過好幾次了，每次聽到都像被戳中同一個地方。"
+  ]); },
+  choices:[
+    {label:"痛定思痛，重新規劃選書與策展主題", delta:{b:9, money:-4}, style:"safe",
+      result:"重新規劃後選書明顯有了自己的味道，熟客也開始注意到不一樣了。"},
+    {label:"苦笑帶過，先把這句話記在心裡", delta:{d:-4, fame:-2}, style:"bold",
+      result:"苦笑帶過，但這句話其實記了很久，一直沒真的放下。"}
+  ]}),
+
+/* ---------- extra depth ---------- */
+EV({id:"salary_freeze", repeat:true,
+  title:"今年，加薪這件事又沒了下文",
+  desc:function(p){ return stale("今年，加薪這件事又沒了下文", [
+    "年度考核會議上，主管一句「今年產業環境不好」，就把加薪這個話題輕輕帶過。"+p.name+"看著同樣的數字連續第三年沒動。",
+    "又一年，加薪的話題被輕輕帶過，"+p.name+"開始覺得這句台詞主管背得比自己還熟。",
+    "這次"+p.name+"乾脆沒有主動提，反正結果大概也猜得到。"
+  ]); },
+  choices:[
+    {label:"據理力爭，至少要個說法", delta:{c:-2, money:4}, style:"bold",
+      result:"力爭之後多少擠出了一點加薪空間，只是主管看自己的眼神，多了點防備。"},
+    {label:"認了，反正吵也沒用", delta:{d:-4}, style:"safe",
+      result:"認了，日子照樣過，只是心裡那股不甘心，一直沒地方發洩。"}
+  ]}),
+
+EV({id:"office_gossip", repeat:true,
+  title:"尾牙上的耳語",
+  desc:function(p){ return stale("尾牙上的耳語", [
+    "尾牙散場後的續攤場合，酒過三巡，"+p.name+"聽到不少業界八卦——誰家又要倒了、誰又跳槽去對家，真真假假難以分辨。",
+    "又一場續攤，"+p.name+"這次聽到的八卦，居然有一則跟自己有關。",
+    "這次的耳語比較不一樣——是關於"+p.name+"自己的公司，真假還說不準。"
+  ]); },
+  choices:[
+    {label:"認真記下來，人脈就是這樣養成的", delta:{c:5, d:-2}, style:"safe",
+      result:"認真social了一整晚，換來幾個新的聯絡方式和不少業界情報。"},
+    {label:"聽聽就好，早點回家休息", delta:{d:3}, style:"bold",
+      result:"早點回家休息，隔天精神好了不少，只是少聽了幾則後來證實是真的傳言。"}
+  ]}),
+
+EV({id:"ghostwriting_offer", paths:["author"], stageMin:2,
+  title:"一份不能掛名的代筆邀約",
+  desc:function(p){ return "一位企業家想找"+p.name+"代筆寫自傳，價碼優渥，唯一條件是：封面只能印企業家的名字。"; },
+  choices:[
+    {label:"接下，先解決現實問題", delta:{money:20, fame:-3, d:-4}, style:"bold",
+      result:"錢確實解決了眼前的問題，只是每次看到那本書擺在書店，心裡都有點複雜。"},
+    {label:"婉拒，這不是想留下的名字", delta:{d:3, a:2}, style:"safe",
+      result:"婉拒之後手頭依然緊，但至少每一個字，都還算得上是自己的。"}
+  ]}),
+
+EV({id:"content_farm_beef", paths:["author"], stageMin:1,
+  title:"讀書會被抓包內容農場化",
+  desc:function(p){ return p.name+"經營的線上讀書會，被眼尖網友發現大量貼文其實是農場文章改寫，"+p.name+"這才知道小編偷懶抄了捷徑。"; },
+  choices:[
+    {label:"公開切割、換掉小編", delta:{fame:-4, money:-3}, style:"bold",
+      result:"公開切割之後話題慢慢平息，但重新找人、重新建立信任花了不少時間。"},
+    {label:"低調處理，內部警告就好", delta:{fame:-6, c:-2}, style:"safe",
+      result:"低調處理沒有讓事情鬧大，但那份被抓包的截圖，還留在一些人的收藏裡。"}
   ]}),
 
 EV({id:"landlord_sale", paths:["store"], stageMin:2,
   title:"房東要把整棟樓賣掉",
   desc:function(p){ return "房東通知"+p.name+"：整棟樓要出售，新屋主的計畫還不確定，租約能不能延續也是未知數。"; },
   choices:[
-    {label:"提早開始物色備案店面", delta:{money:-4, c:3}},
-    {label:"賭一把，先觀望新屋主的態度", delta:{d:-4}}
+    {label:"提早開始物色備案店面", delta:{money:-4, c:3}, style:"safe",
+      result:"提早物色備案讓自己心裡踏實不少，即使最後可能用不上。"},
+    {label:"賭一把，先觀望新屋主的態度", delta:{d:-4}, style:"bold",
+      result:"觀望的這段時間，每天都在猜新屋主到底會不會續約。"}
   ]}),
 
 EV({id:"supplier_shortage", paths:["store"], repeat:true,
   title:"熱門新書被大通路吃光",
-  desc:function(p){ return "這期最熱門的新書，經銷商第一批貨幾乎全給了大型連鎖通路，"+p.name+"只分到零星幾本，開賣當天就被讀者掃空。"; },
+  desc:function(p){ return stale("熱門新書被大通路吃光", [
+    "這期最熱門的新書，經銷商第一批貨幾乎全給了大型連鎖通路，"+p.name+"只分到零星幾本，開賣當天就被讀者掃空。",
+    "又一次熱門新書被大通路吃光貨量，"+p.name+"對經銷商的分配邏輯已經見怪不怪。",
+    "這次"+p.name+"提早下了加訂單，結果貨量還是照樣被大通路先吃走。"
+  ]); },
   choices:[
-    {label:"多囤些冷門好書，做出差異化", delta:{a:4, money:-3}},
-    {label:"據理力爭，跟經銷商談進貨量", delta:{c:-2, money:2}}
+    {label:"多囤些冷門好書，做出差異化", delta:{a:4, money:-3}, style:"safe",
+      result:"囤的冷門好書慢慢養出了固定客群，反而成了店裡的招牌區。"},
+    {label:"據理力爭，跟經銷商談進貨量", delta:{c:-2, money:2}, style:"bold",
+      result:"力爭之後拿到的貨量沒差多少，但跟經銷商的關係倒是變得有點尷尬。"}
   ]})
 ];
 var EVENTS_BY_ID = {};
@@ -964,7 +1215,8 @@ function newGame(name, pathKey, background){
     phase:"alloc",
     pendingEventId:null,
     forcedEnding:null,
-    lowGritStreak:0
+    lowGritStreak:0,
+    styleCount:{bold:0, safe:0}
   };
   setSeed(S.seed);
   startYear();
@@ -1025,17 +1277,41 @@ function drawEvent(){
   render(true);
 }
 
+var GENERIC_RESULT = {
+  up2: [
+    "這次算是賭對了，接下來一段時間明顯順風不少。",
+    "效果比預期的好，這個決定後來常被人提起，多半是正面的。",
+    "小小的意外之喜，讓這陣子的心情鬆了一口氣。"
+  ],
+  up1: [
+    "沒有戲劇性的轉折，但確實往前挪了一點。",
+    "不算大事，但這步棋走得不虧。"
+  ],
+  flat: [
+    "日子照樣過，這件事很快就被下一件事蓋過去。",
+    "說不上輸贏，就是這麼一回事。"
+  ],
+  down1: [
+    "代價比想像中大一點，但還撐得住。",
+    "不算災難，但確實留下了一點傷。"
+  ],
+  down2: [
+    "這個決定的後座力，比預期猛烈許多。",
+    "事後回想，這步顯然走得不太好。"
+  ]
+};
 function verdictFor(delta){
   var score = 0;
   ["a","b","c","d","e"].forEach(function(k){ if(delta[k]) score += delta[k]; });
   if(delta.money) score += delta.money/2;
   if(delta.fame) score += delta.fame*1.3;
-  if(score>=9) return {cls:"up", text:"► 大有斬獲"};
-  if(score>=3) return {cls:"up", text:"► 小有進展"};
-  if(score>-3) return {cls:"flat", text:"► 有得有失"};
-  if(score>-9) return {cls:"down", text:"► 元氣大傷"};
-  return {cls:"down", text:"► 重挫"};
+  if(score>=9) return {cls:"up", tier:"up2"};
+  if(score>=3) return {cls:"up", tier:"up1"};
+  if(score>-3) return {cls:"flat", tier:"flat"};
+  if(score>-9) return {cls:"down", tier:"down1"};
+  return {cls:"down", tier:"down2"};
 }
+function genericResult(tier){ return pick(GENERIC_RESULT[tier]); }
 
 function resolveChoice(idx){
   var ev = getPendingEvent();
@@ -1044,6 +1320,8 @@ function resolveChoice(idx){
   var verdict = verdictFor(choice.delta);
   applyDelta(S, choice.delta);
   if(choice.flag) S.flags[choice.flag] = true;
+  if(choice.style){ S.styleCount[choice.style] = (S.styleCount[choice.style]||0)+1; }
+  var resultText = choice.result || genericResult(verdict.tier);
   var deltaHTML = deltaList.map(function(d){
     var cls = d.val>0?"pos":"neg"; var sign = d.val>0?"+":"";
     return '<span class="'+cls+'">'+esc(d.label)+' '+sign+d.val+(d.unit||"")+'</span>';
@@ -1053,7 +1331,7 @@ function resolveChoice(idx){
     '<div class="etitle">'+esc(ev.title)+'</div>'+
     '<p>'+esc(ev.desc(S))+'</p>'+
     '<div class="picked">你選擇了：「'+esc(choice.label)+'」</div>'+
-    '<div class="verdict '+verdict.cls+'">'+verdict.text+'</div>'+
+    '<div class="result-text"><span class="vdot '+verdict.cls+'"></span><span class="rtxt">'+esc(resultText)+'</span></div>'+
     '<div class="delta">'+(deltaHTML||'<span style="color:var(--dim);background:none;border:none;padding:0;">（沒有明顯變化）</span>')+'</div></div>'
   );
   S.log.push({age:S.age, title:ev.title, choice:choice.label});
@@ -1165,7 +1443,9 @@ var TAGS = [
   {label:"尾牙情報員", test:function(){ return logCount("尾牙上的耳語")>=2; }},
   {label:"支語警察的常客", test:function(){ return logHas("讀者檢討你用「支語」"); }},
   {label:"標案風波倖存者", test:function(){ return logHas("標案風波"); }},
-  {label:"基金會知情人士", test:function(){ return logHas("老闆的那個基金會"); }}
+  {label:"基金會知情人士", test:function(){ return logHas("老闆的那個基金會"); }},
+  {label:"賭徒性格", test:function(){ return (S.styleCount.bold||0)-(S.styleCount.safe||0)>=6; }},
+  {label:"穩紮穩打", test:function(){ return (S.styleCount.safe||0)-(S.styleCount.bold||0)>=6; }}
 ];
 
 function computeTags(){
@@ -1188,6 +1468,14 @@ function debtNote(){
   ]);
 }
 
+function styleNote(){
+  var b=S.styleCount.bold||0, s=S.styleCount.safe||0;
+  if(b+s<6) return "";
+  if(b-s>=5) return " 回頭看這些年的選擇，"+S.name+"多半是賭上去的那種——不是每次都贏，但幾乎沒有真的縮過手。";
+  if(s-b>=5) return " 回頭看這些年的選擇，"+S.name+"走的始終是穩紮穩打的路——不是最快的那條，但很少讓自己陷入絕境。";
+  return "";
+}
+
 function computeEnding(){
   var path=S.path;
   var out;
@@ -1201,7 +1489,10 @@ function computeEnding(){
   else if(path==="marketing"){ out = marketingEnding(); }
   else if(path==="translator"){ out = translatorEnding(); }
   else { out = storeEnding(); }
-  if(!isCrisis && S.money<-15){ out.text += " "+debtNote(); }
+  if(!isCrisis){
+    out.text += styleNote();
+    if(S.money<-15) out.text += " "+debtNote();
+  }
   S.ending = out;
   S.ending.tags = computeTags();
   S.phase="ending";
@@ -1286,7 +1577,7 @@ function marketingEnding(){
     return {tag:"good", title:"資深行銷經理",
       text:S.name+"手上經手的企劃案有成有敗，但整體戰績讓公司離不開這個人。加薪單上的數字，是這些年熬夜換來的。"};
   }
-  if(S.fame<=15 && logHas("主視覺被抓包抄襲")){
+  if(S.fame<=15 && S.flags.prDisaster){
     return {tag:"bad", title:"黯然離職",
       text:S.name+"因為一場處理不當的公關風暴，在會議室裡遞出辭呈。離開那天，同事送的卡片上寫著「辛苦了」，沒人多說什麼。"};
   }
