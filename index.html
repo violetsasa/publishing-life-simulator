@@ -92,6 +92,12 @@ button{ font:inherit; }
 .entry .esub{ font-family:var(--font-mono); font-size:.62rem; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px;}
 .entry p{ margin:0 0 8px; line-height:1.7; font-size:.95rem; color:var(--chalk); }
 .entry .picked{ font-size:.86rem; color:var(--dim); border-left:2px solid var(--gold); padding-left:10px; margin:8px 0 8px;}
+.gamble-tag{
+  display:inline-block; margin-left:8px; font-family:var(--font-mono); font-size:.66rem;
+  letter-spacing:.04em; padding:2px 8px; border-radius:10px; vertical-align:middle;
+}
+.gamble-tag.win{ color:var(--good); border:1px solid var(--good); background:rgba(143,191,138,.12); }
+.gamble-tag.lose{ color:var(--bad); border:1px solid var(--bad); background:rgba(217,112,90,.12); }
 .result-text{ display:flex; gap:8px; align-items:flex-start; margin:2px 0 10px; }
 .result-text .vdot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-top:8px; flex-shrink:0; }
 .result-text .vdot.up{ background:var(--good); }
@@ -431,8 +437,10 @@ EV({id:"blurb_backfire", stageMin:1,
   choices:[
     {label:"連夜撤掉推薦語、緊急改版", delta:{money:-8, d:-5}, style:"safe",
       result:"連夜改版總算趕上上市，印刷廠加班費也一併算進了這場風波的成本。"},
-    {label:"賭一把，維持原樣照常上市", delta:{fame:pick([-8,6]), c:-3}, style:"bold",
-      result:"賭注開出來的結果好壞參半，但至少事情算是過去了。"}
+    {label:"賭一把，維持原樣照常上市", style:"bold",
+      chance:function(p){ return clamp(0.35+p.stats.c/150, 0.2, 0.7); },
+      success:{delta:{fame:8, c:-1}, result:"賭注賭對了，話題冷卻的速度比預期快，這件事很快就被翻篇。"},
+      fail:{delta:{fame:-10, c:-5}, result:"賭注沒有賭對，這件事後來又被翻出來鞭了一輪。"}}
   ]}),
 
 EV({id:"belt_typo", title:"書腰上的錯字",
@@ -448,7 +456,10 @@ EV({id:"language_police", title:"讀者檢討你用「支語」",
   desc:function(p){ return "文案裡一句「視頻」被讀者截圖公審，留言區吵成兩派，一派護航一派出征，"+p.name+"的通知欄瞬間爆炸。"; },
   choices:[
     {label:"發文致歉並修正用詞", delta:{fame:-2, d:-3}, style:"safe"},
-    {label:"不理會，讓子彈飛一會兒", delta:{fame:pick([-6,3]), c:-2}, style:"bold"}
+    {label:"不理會，讓子彈飛一會兒", style:"bold",
+      chance:function(p){ return clamp(0.4+p.stats.e/200, 0.25, 0.7); },
+      success:{delta:{fame:4, c:-1}, result:"話題真的自己冷卻了，什麼都沒做反而是最有效的做法。"},
+      fail:{delta:{fame:-8, c:-4}, result:"沉默被解讀成心虛，戰火反而燒得更旺。"}}
   ]}),
 
 EV({id:"merger", stageMin:3,
@@ -491,8 +502,10 @@ EV({id:"photo_rights", paths:["author"], title:"沒簽授權的那張照片",
   choices:[
     {label:"主動聯絡道歉、付費和解", delta:{money:-10, d:2}, style:"safe",
       result:"和解金付得心痛，但至少晚上睡得著。"},
-    {label:"裝沒事，賭對方不會發現", delta:{fame:pick([-14,0]), money:pick([-20,0])}, style:"bold",
-      result:"賭注的結果只有天知道，"+"但這件事從此變成心裡一根隱隱作痛的刺。"}
+    {label:"裝沒事，賭對方不會發現", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.e/150, 0.15, 0.65); },
+      success:{delta:{}, result:"運氣好，這件事似乎就這麼被忽略過去了，只是心裡一直懸著一根刺。"},
+      fail:{delta:{fame:-14, money:-20}, result:"還是被發現了，而且是在最壞的時機點——鬧上新聞，和解金也少不了。"}}
   ]}),
 
 EV({id:"celeb_memoir", paths:["author"], stageMin:2, weight:0.6,
@@ -566,8 +579,10 @@ EV({id:"plagiarism_doubt", paths:["author"], stageMin:2,
   title:"抄襲爭議疑雲",
   desc:function(p){ return "有人在社群指出"+p.name+"某段情節「跟某部作品高度相似」，附上並排截圖，留言區迅速分成兩派。"; },
   choices:[
-    {label:"公開創作筆記、時間軸自清", delta:{d:-4, fame:pick([6,-6])}, style:"bold",
-      result:"筆記公開後，清白算是還了，但過程被翻來覆去檢視的感覺不太好受。"},
+    {label:"公開創作筆記、時間軸自清", style:"bold",
+      chance:function(p){ return clamp(0.35+p.stats.a/150, 0.2, 0.7); },
+      success:{delta:{d:-4, fame:8}, result:"筆記攤開後，大家看見了完整的創作脈絡，清白洗得漂亮。"},
+      fail:{delta:{d:-6, fame:-8}, result:"筆記反而被逐字檢視挑毛病，爭議沒有平息，反而延燒更久。"}},
     {label:"完全不回應，交給時間證明", delta:{d:-6, fame:-3}, style:"safe",
       result:"沉默換來的是話題慢慢淡去，只是心裡那口氣一直沒順過。"}
   ]}),
@@ -582,8 +597,10 @@ EV({id:"booksigning", paths:["author"], repeat:true,
   choices:[
     {label:"提前在社群發動員、催朋友來撐場", delta:{c:5, fame:3, d:-2}, style:"bold",
       result:"座位總算填得像樣，只是這場動員把不少人情用掉了。"},
-    {label:"順其自然，不特別經營", delta:{fame:pick([5,-3])}, style:"safe",
-      result:"結果好壞全看緣分，這次算是給自己省了點力氣。"}
+    {label:"順其自然，不特別經營", style:"safe",
+      chance:function(p){ return clamp(0.45+p.fame/300, 0.3, 0.7); },
+      success:{delta:{fame:6}, result:"結果意外不錯，現場來的人比預期多，全靠自然發酵的口碑。"},
+      fail:{delta:{fame:-4}, result:"結果不如預期，現場冷冷清清，這次的「順其自然」賭輸了。"}}
   ]}),
 
 EV({id:"fan_army", paths:["author"], stageMin:2,
@@ -640,8 +657,10 @@ EV({id:"factcheck_save", paths:["editor"], title:"驚險攔截的事實查核",
   choices:[
     {label:"連夜協調作者改稿、延後上市", delta:{money:-5, d:-3, fame:4}, style:"safe",
       result:"延後上市的成本不小，但這本書後來因為考據紮實得到不少好評。"},
-    {label:"時間來不及，先印再說之後勘誤", delta:{fame:pick([-8,2])}, style:"bold",
-      result:"賭了一把讓它先印出去，事後的反應好壞參半。"}
+    {label:"時間來不及，先印再說之後勘誤", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.e/150, 0.15, 0.6); },
+      success:{delta:{fame:3}, result:"賭注賭對了，幾乎沒有讀者發現那個錯誤。"},
+      fail:{delta:{fame:-10}, result:"上市沒幾天就被讀者抓包，勘誤啟事發得又快又心虛。"}}
   ]}),
 
 EV({id:"royalty_error", paths:["editor"], title:"版稅對帳單算錯了",
@@ -719,8 +738,10 @@ EV({id:"visual_plagiarism", paths:["marketing"], title:"主視覺被抓包抄襲
   choices:[
     {label:"連夜換掉視覺、公開致歉", delta:{money:-8, d:-4}, style:"safe",
       result:"連夜換稿雖然狼狽，但誠懇的致歉讓話題很快降溫。"},
-    {label:"辯稱純屬致敬，硬撐活動照辦", delta:{fame:pick([-10,3])}, style:"bold",
-      result:"硬撐的說法沒有完全說服大家，這件事後來變成職涯裡一段常被提起的黑歷史。", flag:"prDisaster"}
+    {label:"辯稱純屬致敬，硬撐活動照辦", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.c/150, 0.15, 0.6); },
+      success:{delta:{fame:5}, result:"「致敬說」意外被一些人接受，活動照常辦完，幾乎沒留下痕跡。"},
+      fail:{delta:{fame:-14}, result:"硬撐的說法沒有說服大家，這件事後來變成職涯裡一段常被提起的黑歷史。", flag:"prDisaster"}}
   ]}),
 
 EV({id:"meme_viral", paths:["marketing"], title:"迷因帳號意外爆紅",
@@ -776,8 +797,10 @@ EV({id:"ad_burn", paths:["marketing"], repeat:true, stageMin:2, title:"廣告投
   choices:[
     {label:"即時喊停、重新調整受眾", delta:{money:-6, b:5}, style:"safe",
       result:"即時喊停止損，重新調整過的下一波，數據明顯好看不少。"},
-    {label:"賭一把繼續燒到底", delta:{money:-16, fame:pick([8,0])}, style:"bold",
-      result:"賭注開出來的結果只能說碰運氣，"+"預算表上的數字倒是很誠實。"}
+    {label:"賭一把繼續燒到底", style:"bold",
+      chance:function(p){ return clamp(0.35+p.stats.b/150, 0.2, 0.65); },
+      success:{delta:{money:-16, fame:10}, result:"這波賭注最後真的燒出了聲量，主管的臉色總算緩和下來。"},
+      fail:{delta:{money:-16, fame:-4}, result:"燒到最後數字依然難看，這筆預算變成了一個內部笑話。"}}
   ]}),
 
 EV({id:"campaign_hit", paths:["marketing"], stageMin:2, title:"意外做出年度爆款企劃",
@@ -795,8 +818,10 @@ EV({id:"boycott_adjacent", paths:["marketing"], stageMin:2,
   choices:[
     {label:"緊急切割、公開撤下合作內容", delta:{money:-10, fame:-4}, style:"safe",
       result:"切割得算快，損失止住了，只是這批預算等於是打了水漂。"},
-    {label:"觀望，賭風波很快過去", delta:{fame:pick([-12,2])}, style:"bold",
-      result:"賭注的結果不好說，這陣子都在留意風向有沒有轉。", flag:"prDisaster"}
+    {label:"觀望，賭風波很快過去", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.c/150, 0.15, 0.6); },
+      success:{delta:{fame:4}, result:"風波真的很快就過去了，新書上市幾乎沒受到影響。"},
+      fail:{delta:{fame:-14}, result:"風波沒有過去，反而愈滾愈大，新書上市第一週的討論全被這件事佔據。", flag:"prDisaster"}}
   ]}),
 
 EV({id:"algorithm_change", paths:["marketing"], repeat:true, stageMin:2,
@@ -878,8 +903,10 @@ EV({id:"overbooked", paths:["translator"], repeat:true, title:"三份稿子同�
 EV({id:"mistranslation", paths:["translator"], title:"誤譯出包被抓包",
   desc:function(p){ return "有讀者發現"+p.name+"把一個關鍵術語譯錯，截圖附上原文對照瘋傳，留言區笑聲一片。"; },
   choices:[
-    {label:"公開認錯、附上勘誤表", delta:{d:-3, fame:pick([4,-6])}, style:"safe",
-      result:"認錯認得乾脆，反而讓一些讀者對這份坦承留下了印象。"},
+    {label:"公開認錯、附上勘誤表", style:"safe",
+      chance:function(p){ return clamp(0.4+p.stats.a/150, 0.25, 0.7); },
+      success:{delta:{d:-3, fame:6}, result:"坦承認錯反而讓一些讀者對這份誠實留下好印象。"},
+      fail:{delta:{d:-5, fame:-8}, result:"認錯沒有平息討論，反而讓更多人開始挑剔其他段落。"}},
     {label:"沉默不回應，等話題過去", delta:{fame:-8}, style:"bold",
       result:"沉默沒有讓話題真正過去，反而變成日後被翻出來的舊帳。"}
   ]}),
@@ -1316,12 +1343,23 @@ function genericResult(tier){ return pick(GENERIC_RESULT[tier]); }
 function resolveChoice(idx){
   var ev = getPendingEvent();
   var choice = ev.choices[idx];
-  var deltaList = fmtDelta(S, choice.delta);
-  var verdict = verdictFor(choice.delta);
-  applyDelta(S, choice.delta);
-  if(choice.flag) S.flags[choice.flag] = true;
+  var branch = choice;
+  var gambleTag = "";
+  if(choice.success && choice.fail){
+    var chance = typeof choice.chance==="function" ? choice.chance(S) : (choice.chance===undefined?0.5:choice.chance);
+    var won = rng() < chance;
+    branch = won ? choice.success : choice.fail;
+    gambleTag = won
+      ? '<span class="gamble-tag win">賭贏了</span>'
+      : '<span class="gamble-tag lose">賭輸了</span>';
+  }
+  var deltaList = fmtDelta(S, branch.delta);
+  var verdict = verdictFor(branch.delta);
+  applyDelta(S, branch.delta);
   if(choice.style){ S.styleCount[choice.style] = (S.styleCount[choice.style]||0)+1; }
-  var resultText = choice.result || genericResult(verdict.tier);
+  if(choice.flag) S.flags[choice.flag] = true;
+  if(branch.flag) S.flags[branch.flag] = true;
+  var resultText = branch.result || genericResult(verdict.tier);
   var deltaHTML = deltaList.map(function(d){
     var cls = d.val>0?"pos":"neg"; var sign = d.val>0?"+":"";
     return '<span class="'+cls+'">'+esc(d.label)+' '+sign+d.val+(d.unit||"")+'</span>';
@@ -1330,7 +1368,7 @@ function resolveChoice(idx){
     '<div class="entry"><div class="esub">'+S.age+' 歲 · '+BEAT_LABELS[S.eventsThisYear+1]+'</div>'+
     '<div class="etitle">'+esc(ev.title)+'</div>'+
     '<p>'+esc(ev.desc(S))+'</p>'+
-    '<div class="picked">你選擇了：「'+esc(choice.label)+'」</div>'+
+    '<div class="picked">你選擇了：「'+esc(choice.label)+'」'+gambleTag+'</div>'+
     '<div class="result-text"><span class="vdot '+verdict.cls+'"></span><span class="rtxt">'+esc(resultText)+'</span></div>'+
     '<div class="delta">'+(deltaHTML||'<span style="color:var(--dim);background:none;border:none;padding:0;">（沒有明顯變化）</span>')+'</div></div>'
   );
