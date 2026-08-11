@@ -209,6 +209,12 @@ input[type=text]:focus-visible{ outline:2px solid var(--gold); outline-offset:1p
 .ending-tag.neutral{ color:var(--dim); border-color:var(--rule); }
 .ending-tag.bad{ color:var(--bad); border-color:var(--bad); }
 .history{ font-family:var(--font-mono); font-size:.7rem; color:var(--dim); line-height:1.9; }
+.careertags{ display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 20px; }
+.careertags span{
+  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.03em;
+  background:var(--panel2); border:1px solid var(--gold); color:var(--gold);
+  padding:5px 12px; border-radius:20px;
+}
 .footer-note{ text-align:center; font-family:var(--font-mono); font-size:.66rem; color:var(--dim); margin-top:20px; letter-spacing:.04em;}
 </style>
 
@@ -708,7 +714,7 @@ EV({id:"vanish_temptation", paths:["translator"], weight:1.2, repeat:true,
   desc:function(p){ return p.name+"盯著還剩三分之二沒譯完的稿子，第一次認真理解那些「人間蒸發」的前輩譯者——原來不是不負責任，是真的撐不住了。"; },
   choices:[
     {label:"深呼吸，硬著頭皮把稿子生出來", delta:{d:5, a:-2}},
-    {label:"手機關機，先躲三天再說", delta:{money:-10, c:-10}}
+    {label:"手機關機，先躲三天再說", delta:{money:-10, c:-10}, flag:"disappeared"}
   ]}),
 
 EV({id:"rate_haggle", paths:["translator"], repeat:true, title:"十年沒漲過的翻譯費",
@@ -978,6 +984,7 @@ function startYear(){
   if(S.money < -20){
     var interest = Math.max(2, Math.round(Math.abs(S.money)*0.05));
     S.money -= interest;
+    S.flags.hadDebtInterest = true;
     S.entries.push('<div class="ticker"><b>債務</b><span>信用卡循環利息又扣了 '+interest+' 萬，帳戶餘額持續探底。</span></div>');
   }
   if(checkDebtCrisis()) return;
@@ -1036,6 +1043,7 @@ function resolveChoice(idx){
   var deltaList = fmtDelta(S, choice.delta);
   var verdict = verdictFor(choice.delta);
   applyDelta(S, choice.delta);
+  if(choice.flag) S.flags[choice.flag] = true;
   var deltaHTML = deltaList.map(function(d){
     var cls = d.val>0?"pos":"neg"; var sign = d.val>0?"+":"";
     return '<span class="'+cls+'">'+esc(d.label)+' '+sign+d.val+(d.unit||"")+'</span>';
@@ -1096,6 +1104,7 @@ function checkDebtCrisis(){
 function checkBurnoutCrisis(){
   if(S.stats.d<=20){ S.lowGritStreak = (S.lowGritStreak||0)+1; }
   else{ S.lowGritStreak = 0; }
+  if(S.lowGritStreak===2){ S.flags.nearBurnout = true; }
   if(S.lowGritStreak>=3){
     S.forcedEnding = "burnout";
     computeEnding();
@@ -1122,6 +1131,54 @@ function allocDec(k){
 }
 
 /* ---------- endings ---------- */
+function logHas(title){ return S.log.some(function(l){ return l.title===title; }); }
+function logCount(title){ return S.log.filter(function(l){ return l.title===title; }).length; }
+function logChoice(title, sub){ return S.log.some(function(l){ return l.title===title && l.choice.indexOf(sub)>-1; }); }
+
+var TAGS = [
+  {label:"諾貝爾陪榜生", test:function(){ return S.path==="author" && S.stats.a>=65 && S.fame>=50 && S.ending.title!=="諾貝爾文學獎與國外授權"; }},
+  {label:"曾與黑粉正面對決", test:function(){ return logHas("戰力與怨念都很強的黑粉"); }},
+  {label:"爭議自傳操盤手", test:function(){ return logHas("一萬美金簽下的名人自傳"); }},
+  {label:"文壇長青樹", test:function(){ return S.path==="author" && (S.ending.tag==="good"||S.ending.tag==="great"); }},
+  {label:"代筆隱形人", test:function(){ return logChoice("一份不能掛名的代筆邀約","接下"); }},
+  {label:"伯樂之眼", test:function(){ return logChoice("挖到一位潛力新秀","開出誠意"); }},
+  {label:"編輯部消防隊", test:function(){ return logHas("驚險攔截的事實查核")||logHas("人間蒸發的譯者"); }},
+  {label:"預算殺手", test:function(){ return logChoice("手滑核准的預付版稅","死撐"); }},
+  {label:"迷因製造機", test:function(){ return logHas("迷因帳號意外爆紅"); }},
+  {label:"公關滅火隊隊長", test:function(){ return logHas("業配網紅偷渡私貨")||logHas("主視覺被抓包抄襲"); }},
+  {label:"人間蒸發未遂", test:function(){ return !!S.flags.disappeared; }},
+  {label:"隱形冠軍", test:function(){ return S.path==="translator" && S.stats.a>=60 && S.fame<=10 && (S.ending.tag==="good"||S.ending.tag==="great"); }},
+  {label:"版權頁幽靈", test:function(){ return logHas("版權頁沒印上你的名字"); }},
+  {label:"腰痛代言人", test:function(){ return logHas("搬書閃到腰"); }},
+  {label:"打卡地標創造者", test:function(){ return logHas("意外爆紅的打卡地標"); }},
+  {label:"博客來的眼中釘", test:function(){ return logHas("拍照比價的顧客"); }},
+  {label:"人脈之神", test:function(){ return S.stats.c>=80; }},
+  {label:"句句得罪人", test:function(){ return S.stats.c<=12; }},
+  {label:"鐵打的body", test:function(){ return S.stats.d>=80; }},
+  {label:"紙上富貴", test:function(){ return S.money>=80; }},
+  {label:"負債奇蹟生還者", test:function(){ return S.money<=-60 && S.ending.tag!=="bad"; }},
+  {label:"知名度爆棚", test:function(){ return S.fame>=80; }},
+  {label:"深藏功與名", test:function(){ return S.fame<=5 && (S.ending.tag==="good"||S.ending.tag==="great"); }},
+  {label:"循環利息苦主", test:function(){ return !!S.flags.hadDebtInterest; }},
+  {label:"差點就倒下", test:function(){ return !!S.flags.nearBurnout && S.ending.title!=="過勞倒下"; }},
+  {label:"健檢報告常客", test:function(){ return logCount("年度健檢通知單")>=2; }},
+  {label:"尾牙情報員", test:function(){ return logCount("尾牙上的耳語")>=2; }},
+  {label:"支語警察的常客", test:function(){ return logHas("讀者檢討你用「支語」"); }},
+  {label:"標案風波倖存者", test:function(){ return logHas("標案風波"); }},
+  {label:"基金會知情人士", test:function(){ return logHas("老闆的那個基金會"); }}
+];
+
+function computeTags(){
+  var matched = TAGS.filter(function(t){ try{ return t.test(); }catch(e){ return false; } });
+  var picked = [];
+  var pool = matched.slice();
+  while(picked.length<4 && pool.length){
+    var i = Math.floor(rng()*pool.length);
+    picked.push(pool.splice(i,1)[0].label);
+  }
+  return picked;
+}
+
 function debtNote(){
   return pick([
     "唯一沒有寫進履歷的，是那筆一直沒打平的負債。",
@@ -1146,6 +1203,7 @@ function computeEnding(){
   else { out = storeEnding(); }
   if(!isCrisis && S.money<-15){ out.text += " "+debtNote(); }
   S.ending = out;
+  S.ending.tags = computeTags();
   S.phase="ending";
   render(true);
 }
@@ -1192,7 +1250,7 @@ function authorEnding(){
     return {tag:"neutral", title:"收支勉強打平的職業作家",
       text:S.name+"還在寫，帳戶餘額總在及格邊緣徘徊。沒有得獎，沒有絕版，也沒有放棄——某種意義上，這就是這行最誠實的成功。"};
   }
-  if(s.d<=25 || S.flags.gaveUp){
+  if(s.d<=25){
     return {tag:"bad", title:"轉職：把故事留給自己",
       text:S.name+"最終沒能靠寫作活下去，把最後一份書稿存進硬碟深處，去應徵了一份"+pick(["行銷企劃","出版社編輯","文案外包"])+"的工作。同事都不知道，他們的新同事曾經差一點成為作家。"};
   }
@@ -1228,7 +1286,7 @@ function marketingEnding(){
     return {tag:"good", title:"資深行銷經理",
       text:S.name+"手上經手的企劃案有成有敗，但整體戰績讓公司離不開這個人。加薪單上的數字，是這些年熬夜換來的。"};
   }
-  if(S.fame<=15 && S.flags.prDisaster){
+  if(S.fame<=15 && logHas("主視覺被抓包抄襲")){
     return {tag:"bad", title:"黯然離職",
       text:S.name+"因為一場處理不當的公關風暴，在會議室裡遞出辭呈。離開那天，同事送的卡片上寫著「辛苦了」，沒人多說什麼。"};
   }
@@ -1469,6 +1527,7 @@ function renderEnding(){
     '<h2 class="title">'+esc(e.title)+'</h2>'+
     '<div class="sub">'+PATHS[S.path].noun+' '+esc(S.name)+' · 心境 '+S.age+' 歲 · 種子 '+esc(S.seed)+'</div>'+
     '<p>'+e.text+'</p>'+
+    (e.tags&&e.tags.length ? '<div class="careertags">'+e.tags.map(function(t){return '<span>'+esc(t)+'</span>';}).join("")+'</div>' : "")+
     statBarsHTML()+
     '<div class="sub" style="margin-top:14px;">生涯記事</div>'+
     '<div class="history">'+(historyLines||"（平淡的一生，沒留下什麼紀錄）")+'</div>'+
@@ -1572,6 +1631,21 @@ function makeResultCardDataURL(){
       ctx.fillRect(x, y+30, Math.max(0,Math.min(1,st.val/st.max))*(colW-20), 4);
     }
   });
+
+  if(e.tags && e.tags.length){
+    var tagY = H-78;
+    ctx.font = "13px monospace";
+    var tx = 56;
+    e.tags.forEach(function(tag){
+      var w = ctx.measureText(tag).width+18;
+      if(tx+w>W-56){ tx=56; tagY+=26; }
+      ctx.strokeStyle = "#d3a24d";
+      ctx.strokeRect(tx, tagY-16, w, 22);
+      ctx.fillStyle = "#d3a24d";
+      ctx.fillText(tag, tx+9, tagY);
+      tx += w+8;
+    });
+  }
 
   ctx.fillStyle = "#a89d86";
   ctx.font = "11px monospace";
