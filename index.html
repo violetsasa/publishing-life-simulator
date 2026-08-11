@@ -3,245 +3,213 @@
 
 <style>
 :root{
-  --paper:#ECE7D9;
-  --paper-2:#E1DAC6;
-  --ink:#242217;
-  --ink-soft:#57503f;
-  --rule:#c7bda0;
-  --red:#a83f26;
-  --gold:#8a6a2f;
-  --good:#3f6b4a;
-  --bad:#a83f26;
-  --shadow: 0 1px 0 rgba(0,0,0,.05);
+  --bg:#14120f;
+  --panel:#1c1914;
+  --panel2:#221e17;
+  --rule:#3a3226;
+  --chalk:#ece4d2;
+  --dim:#a89d86;
+  --red:#c1503a;
+  --gold:#d3a24d;
+  --good:#8fbf8a;
+  --bad:#d9705a;
   --font-display: "Iowan Old Style","Palatino Linotype","Songti TC","PMingLiU",Georgia,serif;
   --font-body: "Palatino Linotype","Iowan Old Style","PMingLiU",Georgia,serif;
-  --font-mono: ui-monospace,"SF Mono",Consolas,"Cascadia Mono",monospace;
-}
-@media (prefers-color-scheme: dark){
-  :root{
-    --paper:#1b1a15;
-    --paper-2:#232019;
-    --ink:#e7e0cc;
-    --ink-soft:#b3a98e;
-    --rule:#4a4536;
-    --red:#d9835f;
-    --gold:#cfa85c;
-    --good:#7fb28d;
-    --bad:#d9835f;
-    --shadow: 0 1px 0 rgba(0,0,0,.3);
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#1b1a15; --paper-2:#232019; --ink:#e7e0cc; --ink-soft:#b3a98e;
-  --rule:#4a4536; --red:#d9835f; --gold:#cfa85c; --good:#7fb28d; --bad:#d9835f;
-  --shadow: 0 1px 0 rgba(0,0,0,.3);
-}
-:root[data-theme="light"]{
-  --paper:#ECE7D9; --paper-2:#E1DAC6; --ink:#242217; --ink-soft:#57503f;
-  --rule:#c7bda0; --red:#a83f26; --gold:#8a6a2f; --good:#3f6b4a; --bad:#a83f26;
-  --shadow: 0 1px 0 rgba(0,0,0,.05);
+  --font-mono: ui-monospace,"IBM Plex Mono","SF Mono",Consolas,"Cascadia Mono",monospace;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
   background:
-    radial-gradient(ellipse at top, rgba(168,63,38,0.04), transparent 60%),
-    var(--paper);
-  color:var(--ink);
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(211,162,77,0.06), transparent 60%),
+    var(--bg);
+  color:var(--chalk);
   font-family:var(--font-body);
   min-height:100vh;
   -webkit-font-smoothing:antialiased;
 }
-.wrap{
-  max-width:720px;
-  margin:0 auto;
-  padding:28px 18px 80px;
-}
+button{ font:inherit; }
+.wrap{ max-width:720px; margin:0 auto; padding:0 16px 40px; }
 .masthead{
   display:flex; align-items:baseline; justify-content:space-between;
-  border-bottom:2px solid var(--ink);
-  padding-bottom:10px; margin-bottom:22px;
-  flex-wrap:wrap; gap:8px;
+  padding:22px 0 14px; flex-wrap:wrap; gap:8px;
 }
 .masthead h1{
-  font-family:var(--font-display);
-  font-weight:700;
-  font-size:1.5rem;
-  letter-spacing:.02em;
-  margin:0;
-  text-wrap:balance;
+  font-family:var(--font-display); font-weight:700; font-size:1.4rem;
+  letter-spacing:.02em; margin:0; text-wrap:balance; color:var(--chalk);
 }
 .masthead .kicker{
-  font-family:var(--font-mono);
-  font-size:.68rem;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  color:var(--ink-soft);
+  font-family:var(--font-mono); font-size:.66rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--dim);
 }
-.page{
-  background:var(--paper-2);
-  border:1px solid var(--rule);
-  border-radius:2px;
-  box-shadow:var(--shadow);
-  padding:26px 24px;
-  margin-bottom:18px;
-}
-h2.title{
-  font-family:var(--font-display);
-  font-size:1.25rem;
-  margin:0 0 6px;
-  text-wrap:balance;
-}
-.sub{
-  font-family:var(--font-mono);
-  font-size:.72rem;
-  color:var(--ink-soft);
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  margin-bottom:16px;
-}
-p{ line-height:1.75; margin:0 0 14px; font-size:1rem; }
-.byline{ color:var(--ink-soft); font-size:.85rem; font-style:italic; margin-bottom:16px;}
 
-/* ledger stat bar */
-.ledger{
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
-  gap:10px 14px;
-  background:var(--paper);
-  border:1px solid var(--rule);
-  padding:14px 16px;
-  margin-bottom:18px;
-  font-family:var(--font-mono);
+/* ---- app shell: sticky header, scrolling log, sticky footer ---- */
+.shell{ display:flex; flex-direction:column; }
+.hdr{
+  position:sticky; top:0; z-index:5;
+  background:var(--panel);
+  border:1px solid var(--rule); border-bottom:none;
+  border-radius:6px 6px 0 0;
+  padding:14px 16px 10px;
 }
-.ledger .cell{ display:flex; flex-direction:column; gap:5px; }
-.ledger .k{ font-size:.62rem; letter-spacing:.08em; color:var(--ink-soft); text-transform:uppercase; white-space:nowrap;}
-.ledger .v{ font-size:.95rem; font-variant-numeric:tabular-nums; font-weight:600; }
-.ledger .bar{ height:5px; background:var(--rule); border-radius:2px; overflow:hidden; }
-.ledger .bar i{ display:block; height:100%; background:var(--red); }
-.ledger .money.neg .v{ color:var(--bad); }
 .topline{
-  display:flex; justify-content:space-between; align-items:center;
-  font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft);
-  margin-bottom:10px; letter-spacing:.05em;
+  display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:6px;
+  font-family:var(--font-mono); font-size:.7rem; color:var(--dim); letter-spacing:.04em; margin-bottom:10px;
 }
 .stage-pill{
-  display:inline-block; border:1px solid var(--ink); padding:2px 10px;
-  border-radius:20px; font-family:var(--font-mono); font-size:.68rem;
-  letter-spacing:.08em; color:var(--ink);
+  display:inline-block; border:1px solid var(--gold); color:var(--gold); padding:2px 10px;
+  border-radius:20px; font-family:var(--font-mono); font-size:.66rem; letter-spacing:.08em;
+}
+.lamps{ display:flex; gap:6px; margin-bottom:10px; }
+.lamp{
+  flex:1; text-align:center; font-family:var(--font-mono); font-size:.62rem; letter-spacing:.06em;
+  color:var(--dim); padding:5px 4px; border:1px solid var(--rule); border-radius:4px; background:var(--panel2);
+}
+.lamp.done{ color:var(--bg); background:var(--gold); border-color:var(--gold); }
+.lamp.now{ color:var(--gold); border-color:var(--gold); background:var(--panel); }
+
+.ledger{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(84px,1fr));
+  gap:8px 12px; font-family:var(--font-mono);
+}
+.ledger .cell{ display:flex; flex-direction:column; gap:4px; }
+.ledger .k{ font-size:.6rem; letter-spacing:.06em; color:var(--dim); text-transform:uppercase; white-space:nowrap;}
+.ledger .v{ font-size:.9rem; font-variant-numeric:tabular-nums; font-weight:600; color:var(--chalk);}
+.ledger .bar{ height:4px; background:var(--rule); border-radius:2px; overflow:hidden; }
+.ledger .bar i{ display:block; height:100%; background:var(--red); }
+.ledger .money.neg .v{ color:var(--bad); }
+
+.log{
+  background:var(--bg);
+  border-left:1px solid var(--rule); border-right:1px solid var(--rule);
+  padding:4px 16px; display:flex; flex-direction:column; gap:10px;
+}
+.entry{
+  border-left:2px solid var(--rule); padding:10px 0 10px 14px;
+}
+.entry.pending{ border-left-color:var(--gold); }
+.entry .etitle{ font-family:var(--font-display); font-size:1.05rem; margin:0 0 4px; color:var(--chalk); text-wrap:balance;}
+.entry .esub{ font-family:var(--font-mono); font-size:.62rem; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px;}
+.entry p{ margin:0 0 8px; line-height:1.7; font-size:.95rem; color:var(--chalk); }
+.entry .picked{ font-size:.86rem; color:var(--dim); border-left:2px solid var(--gold); padding-left:10px; margin:8px 0 8px;}
+.verdict{
+  font-family:var(--font-mono); font-size:.72rem; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; margin:2px 0 8px;
+}
+.verdict.up{ color:var(--good); }
+.verdict.down{ color:var(--bad); }
+.verdict.flat{ color:var(--dim); }
+.delta{ display:flex; flex-wrap:wrap; gap:6px 8px; margin-top:2px; }
+.delta span{
+  font-family:var(--font-mono); font-size:.78rem; font-weight:700;
+  padding:3px 9px; border-radius:20px; letter-spacing:.02em;
+}
+.delta span.pos{ color:var(--good); background:rgba(143,191,138,0.14); border:1px solid rgba(143,191,138,0.35); }
+.delta span.neg{ color:var(--bad); background:rgba(217,112,90,0.14); border:1px solid rgba(217,112,90,0.35); }
+@keyframes entrypop{ from{ transform:scale(.985); opacity:.4; } to{ transform:scale(1); opacity:1; } }
+.entry.fresh{ animation:entrypop .28s ease-out; }
+@media (prefers-reduced-motion: reduce){ .entry.fresh{ animation:none; } }
+.ticker{
+  font-family:var(--font-mono); font-size:.72rem; color:var(--dim);
+  border-left:2px solid var(--gold); padding:6px 0 6px 14px; display:flex; gap:8px;
+}
+.ticker b{ color:var(--gold); font-weight:700; }
+.stagebreak{
+  text-align:center; font-family:var(--font-mono); font-size:.68rem; letter-spacing:.1em;
+  color:var(--gold); text-transform:uppercase; padding:10px 0; border-top:1px dashed var(--rule); border-bottom:1px dashed var(--rule);
 }
 
-/* choices */
-.choices{ display:flex; flex-direction:column; gap:10px; margin-top:18px; }
-button.choice{
-  text-align:left;
-  font-family:var(--font-body);
-  font-size:.95rem;
-  background:var(--paper);
-  border:1px solid var(--ink);
-  color:var(--ink);
-  padding:12px 16px;
-  cursor:pointer;
-  line-height:1.5;
-  transition:transform .08s ease, background .15s ease;
+.ftr{
+  position:sticky; bottom:0; z-index:5;
+  background:var(--panel); border:1px solid var(--rule); border-top:1px solid var(--rule);
+  border-radius:0 0 6px 6px; padding:14px 16px;
 }
-button.choice:hover{ background:var(--red); color:var(--paper); border-color:var(--red); }
+.ftr .hint{ font-family:var(--font-mono); font-size:.68rem; color:var(--dim); margin:0 0 10px; letter-spacing:.02em;}
+
+/* choices */
+.choices{ display:flex; flex-direction:column; gap:8px; }
+button.choice{
+  text-align:left; font-family:var(--font-body); font-size:.92rem;
+  background:var(--panel2); border:1px solid var(--rule); color:var(--chalk);
+  padding:11px 14px; cursor:pointer; line-height:1.5;
+  transition:transform .08s ease, background .15s ease, border-color .15s ease;
+}
+button.choice:hover{ background:var(--red); color:var(--chalk); border-color:var(--red); }
 button.choice:active{ transform:scale(.99); }
 button.choice:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
 button.primary{
-  font-family:var(--font-mono);
-  font-size:.78rem; letter-spacing:.08em; text-transform:uppercase;
-  background:var(--ink); color:var(--paper);
-  border:1px solid var(--ink);
-  padding:11px 20px; cursor:pointer;
+  font-family:var(--font-mono); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase;
+  background:var(--gold); color:var(--bg); border:1px solid var(--gold);
+  padding:11px 20px; cursor:pointer; font-weight:700;
 }
-button.primary:hover{ background:var(--red); border-color:var(--red); }
-button.primary:focus-visible{ outline:2px solid var(--gold); outline-offset:2px;}
+button.primary:hover{ background:var(--red); border-color:var(--red); color:var(--chalk);}
+button.primary:focus-visible{ outline:2px solid var(--chalk); outline-offset:2px;}
 button.ghost{
-  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.06em;
-  background:transparent; border:1px solid var(--rule); color:var(--ink-soft);
+  font-family:var(--font-mono); font-size:.7rem; letter-spacing:.05em;
+  background:transparent; border:1px solid var(--rule); color:var(--dim);
   padding:8px 14px; cursor:pointer;
 }
-button.ghost:hover{ border-color:var(--ink); color:var(--ink); }
+button.ghost:hover{ border-color:var(--gold); color:var(--gold); }
+.actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
 
-/* result / stamp */
-.result{
-  border-left:3px solid var(--red);
-  padding:10px 14px;
-  margin:16px 0;
-  background:rgba(168,63,38,0.06);
-  font-size:.95rem;
+/* start screen */
+.startpage{
+  background:var(--panel); border:1px solid var(--rule); border-radius:6px; padding:26px 22px; margin-top:6px;
 }
-.delta{
-  font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft);
-  margin-top:8px; display:flex; flex-wrap:wrap; gap:8px 14px;
-}
-.delta span.pos{ color:var(--good); }
-.delta span.neg{ color:var(--bad); }
-
-/* news ticker */
-.ticker{
-  font-family:var(--font-mono); font-size:.75rem; color:var(--ink-soft);
-  border-top:1px dashed var(--rule); border-bottom:1px dashed var(--rule);
-  padding:8px 0; margin:16px 0; display:flex; gap:8px;
-}
-.ticker b{ color:var(--red); font-weight:700; }
-
-/* start screen path cards */
-.paths{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:18px 0; }
-@media (max-width:520px){ .paths{ grid-template-columns:1fr; } }
-.pathcard{
-  border:1px solid var(--rule); padding:16px; cursor:pointer; background:var(--paper);
-  transition:border-color .15s, background .15s;
-}
-.pathcard:hover{ border-color:var(--red); }
-.pathcard.sel{ border-color:var(--red); background:rgba(168,63,38,0.08); }
-.pathcard h3{ font-family:var(--font-display); margin:0 0 4px; font-size:1.05rem; }
-.pathcard p{ margin:0; font-size:.82rem; color:var(--ink-soft); line-height:1.5; }
-.pathcard .stats{ font-family:var(--font-mono); font-size:.68rem; color:var(--gold); margin-top:8px; letter-spacing:.03em;}
-
+h2.title{ font-family:var(--font-display); font-size:1.2rem; margin:0 0 4px; color:var(--chalk); text-wrap:balance;}
+.sub{ font-family:var(--font-mono); font-size:.68rem; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px;}
+p{ line-height:1.75; margin:0 0 14px; font-size:1rem; }
 label.field{ display:block; margin-bottom:14px; }
-label.field .lbl{ font-family:var(--font-mono); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); display:block; margin-bottom:6px;}
+label.field .lbl{ font-family:var(--font-mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); display:block; margin-bottom:6px;}
 input[type=text]{
   width:100%; font-family:var(--font-body); font-size:1rem; padding:10px 12px;
-  background:var(--paper); border:1px solid var(--ink); color:var(--ink);
+  background:var(--bg); border:1px solid var(--rule); color:var(--chalk); border-radius:4px;
 }
 input[type=text]:focus-visible{ outline:2px solid var(--gold); outline-offset:1px; }
 
+.paths{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:14px 0; }
+.pathcard{
+  border:1px solid var(--rule); border-radius:4px; padding:14px; cursor:pointer; background:var(--panel2);
+  transition:border-color .15s, background .15s;
+}
+.pathcard:hover{ border-color:var(--gold); }
+.pathcard.sel{ border-color:var(--red); background:rgba(193,80,58,0.12); }
+.pathcard h3{ font-family:var(--font-display); margin:0 0 4px; font-size:1rem; color:var(--chalk);}
+.pathcard p{ margin:0; font-size:.78rem; color:var(--dim); line-height:1.5; }
+.pathcard .stats{ font-family:var(--font-mono); font-size:.64rem; color:var(--gold); margin-top:8px; letter-spacing:.02em;}
+
 .radiorow{ display:flex; gap:8px; flex-wrap:wrap; }
 .radiorow label{
-  font-family:var(--font-mono); font-size:.72rem; border:1px solid var(--rule);
-  padding:7px 12px; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--font-mono); font-size:.7rem; border:1px solid var(--rule); border-radius:4px;
+  padding:7px 12px; cursor:pointer; color:var(--dim);
 }
 .radiorow input{ display:none; }
-.radiorow input:checked + span{ color:var(--ink); }
-.radiorow label:has(input:checked){ border-color:var(--red); color:var(--red); background:rgba(168,63,38,.06); }
+.radiorow label:has(input:checked){ border-color:var(--red); color:var(--red); background:rgba(193,80,58,.1); }
 
-/* allocator */
-.alloc-row{ display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--rule); }
-.alloc-row:last-child{ border-bottom:none; }
-.alloc-name{ width:76px; font-family:var(--font-mono); font-size:.78rem; color:var(--ink-soft); flex-shrink:0;}
-.alloc-bar{ flex:1; height:8px; background:var(--rule); border-radius:2px; overflow:hidden; }
+/* allocator (lives in footer) */
+.alloc-row{ display:flex; align-items:center; gap:10px; padding:6px 0; }
+.alloc-name{ width:78px; font-family:var(--font-mono); font-size:.74rem; color:var(--dim); flex-shrink:0;}
+.alloc-bar{ flex:1; height:7px; background:var(--rule); border-radius:2px; overflow:hidden; }
 .alloc-bar i{ display:block; height:100%; background:var(--gold); }
 .alloc-btns{ display:flex; gap:4px; }
 .alloc-btns button{
-  width:26px; height:26px; border:1px solid var(--ink); background:var(--paper); color:var(--ink);
-  font-family:var(--font-mono); cursor:pointer; font-size:.85rem; line-height:1;
+  width:24px; height:24px; border:1px solid var(--rule); background:var(--panel2); color:var(--chalk);
+  border-radius:3px; font-family:var(--font-mono); cursor:pointer; font-size:.8rem; line-height:1;
 }
 .alloc-btns button:disabled{ opacity:.3; cursor:not-allowed; }
-.pool{ font-family:var(--font-mono); font-size:.8rem; color:var(--gold); text-align:right; margin:10px 0 4px; letter-spacing:.06em;}
+.pool{ font-family:var(--font-mono); font-size:.76rem; color:var(--gold); text-align:right; margin:0 0 8px; letter-spacing:.05em;}
 
 /* ending */
 .ending-tag{
-  display:inline-block; font-family:var(--font-mono); font-size:.68rem; letter-spacing:.1em;
-  text-transform:uppercase; padding:3px 10px; border:1px solid; margin-bottom:10px;
+  display:inline-block; font-family:var(--font-mono); font-size:.66rem; letter-spacing:.1em;
+  text-transform:uppercase; padding:3px 10px; border:1px solid; margin-bottom:10px; border-radius:3px;
 }
 .ending-tag.great{ color:var(--gold); border-color:var(--gold); }
 .ending-tag.good{ color:var(--good); border-color:var(--good); }
-.ending-tag.neutral{ color:var(--ink-soft); border-color:var(--rule); }
+.ending-tag.neutral{ color:var(--dim); border-color:var(--rule); }
 .ending-tag.bad{ color:var(--bad); border-color:var(--bad); }
-.history{ font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft); line-height:1.9; }
-.footer-note{ text-align:center; font-family:var(--font-mono); font-size:.68rem; color:var(--ink-soft); margin-top:24px; letter-spacing:.04em;}
-.actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+.history{ font-family:var(--font-mono); font-size:.7rem; color:var(--dim); line-height:1.9; }
+.footer-note{ text-align:center; font-family:var(--font-mono); font-size:.66rem; color:var(--dim); margin-top:20px; letter-spacing:.04em;}
 </style>
 
 <div class="wrap">
@@ -249,8 +217,8 @@ input[type=text]:focus-visible{ outline:2px solid var(--gold); outline-offset:1p
     <h1>出版人生模擬器</h1>
     <div class="kicker">Publishing Life Simulator</div>
   </div>
-  <div id="app"></div>
-  <div class="footer-note">每個選擇都會被記錄在你的作者簡介裡。同種子＋同選擇＝同人生。</div>
+  <div id="app" class="shell"></div>
+  <div class="footer-note">每個選擇都會被記錄在你的生涯日誌裡。同種子＋同選擇＝同人生。</div>
 </div>
 
 <script>
@@ -281,32 +249,40 @@ function hashSeed(str){
 function makeSeed(){ return Math.random().toString(36).slice(2,10); }
 var rng = Math.random;
 function setSeed(s){ rng = mulberry32(hashSeed(s)); }
-function ri(min,max){ return Math.floor(rng()*(max-min+1))+min; }
 function pick(arr){ return arr[Math.floor(rng()*arr.length)]; }
 function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
 
 /* ---------- static data ---------- */
+/* stat slots are shared mechanically but each path names & starts them differently:
+   a=core craft  b=ideation/instinct  c=network  d=resilience/stamina  e=luck/reserve */
 var PATHS = {
   author:{
     label:"作者", noun:"作家",
     blurb:"在稿紙與截稿日之間走鋼索，賭一個被記住的名字。",
     order:["a","b","c","d","e"],
-    labels:{a:"文筆",b:"企劃力",c:"人脈",d:"抗壓性",e:"運氣"},
-    start:{a:38,b:28,c:22,d:30,e:26,money:8,fame:4}
+    labels:{a:"文筆",b:"靈感",c:"人脈",d:"抗壓性",e:"運氣"},
+    start:{a:38,b:30,c:20,d:28,e:26,money:8,fame:4}
   },
   editor:{
     label:"編輯", noun:"編輯",
     blurb:"在作者的自尊與老闆的損益表之間，找出一本書能活下來的縫。",
     order:["a","b","c","d","e"],
-    labels:{a:"文筆",b:"企劃力",c:"人脈",d:"抗壓性",e:"運氣"},
-    start:{a:30,b:32,c:28,d:34,e:22,money:15,fame:2}
+    labels:{a:"文字功力",b:"選題眼光",c:"人脈",d:"抗壓性",e:"運氣"},
+    start:{a:32,b:30,c:30,d:34,e:22,money:15,fame:2}
   },
   marketing:{
     label:"行銷", noun:"行銷",
     blurb:"把一本沒人聽過的書，變成大家假裝看過的書。",
     order:["a","b","c","d","e"],
-    labels:{a:"文筆",b:"企劃力",c:"人脈",d:"抗壓性",e:"運氣"},
-    start:{a:26,b:36,c:32,d:26,e:24,money:12,fame:6}
+    labels:{a:"文案力",b:"企劃力",c:"人脈",d:"抗壓性",e:"運氣"},
+    start:{a:28,b:34,c:34,d:24,e:24,money:12,fame:6}
+  },
+  translator:{
+    label:"譯者", noun:"譯者",
+    blurb:"在別人的文字裡隱形，靠千字幾百塊撐起一整個文學世界。",
+    order:["a","b","c","d","e"],
+    labels:{a:"外語力",b:"譯筆",c:"人脈",d:"自律力",e:"運氣"},
+    start:{a:40,b:30,c:14,d:24,e:24,money:6,fame:0}
   },
   store:{
     label:"書店", noun:"書店老闆",
@@ -329,6 +305,7 @@ var STAGES = [
   {key:"peak", label:"巔峰期", turns:4},
   {key:"decline", label:"衰退期", turns:3}
 ];
+var BEAT_LABELS = ["年初","年中","年末"];
 
 var TICKERS = [
   "產業快訊：實體書店家數連續第五年下滑，業者稱「早就習慣了」。",
@@ -350,9 +327,7 @@ function fmtDelta(p, delta){
   var out=[];
   var L = PATHS[p.path].labels;
   ["a","b","c","d","e"].forEach(function(k){
-    if(delta[k]){
-      out.push({label:L[k], val:delta[k]});
-    }
+    if(delta[k]) out.push({label:L[k], val:delta[k]});
   });
   if(delta.money) out.push({label:"財力", val:delta.money, unit:"萬"});
   if(delta.fame) out.push({label:"知名度", val:delta.fame});
@@ -367,8 +342,7 @@ function applyDelta(p, delta){
 }
 
 /* ---------- event pool ---------- */
-/* stat slots: a=craft/taste b=plan/creative c=network/social d=grit/stamina e=luck/capital */
-function EV(o){ o.weight = o.weight||1; o.paths = o.paths||["all"]; o.stageMin=o.stageMin||1; o.stageMax=o.stageMax||4; return o; }
+function EV(o){ o.weight=o.weight||1; o.paths=o.paths||["all"]; o.stageMin=o.stageMin||1; o.stageMax=o.stageMax||4; return o; }
 
 var EVENTS = [
 EV({id:"health", title:"年度健檢通知單",
@@ -383,14 +357,14 @@ EV({id:"ai_wave", once:true, stageMin:2,
   desc:function(p){ return "生成式 AI 工具席捲整個產業，同業一半在恐慌、一半在偷用。"+p.name+"要選一條路。"; },
   choices:[
     {label:"認真學工具，把它當助理", delta:{b:10, d:-3}},
-    {label:"堅持純手工，向讀者強調「這是人寫的」", delta:{fame:6, c:-4}}
+    {label:"堅持純手工，向讀者強調「這是人做的」", delta:{fame:6, c:-4}}
   ]}),
 
 EV({id:"pandemic", once:true, stageMax:2,
   title:"一場誰也沒料到的疫情",
   desc:function(p){ return "通路全面停擺，線上活動一夕成為主流。"+p.name+"的收入曲線瞬間變成心電圖。"; },
   choices:[
-    {label:"轉戰線上直播、線上簽書會", delta:{c:6, money:-5, fame:4}},
+    {label:"轉戰線上直播、線上活動", delta:{c:6, money:-5, fame:4}},
     {label:"咬牙撐過去，能省則省", delta:{money:5, d:-6}}
   ]}),
 
@@ -414,13 +388,13 @@ EV({id:"foundation", stageMin:2,
   title:"老闆的那個基金會",
   desc:function(p){ return "小道消息傳開："+p.name+"的老闆同時掌控著一個文化基金會，補助案審核委員名單裡，一半的人跟老闆吃過飯。"; },
   choices:[
-    {label:"裝作不知道，專心做自己的書", delta:{d:2, money:3}},
+    {label:"裝作不知道，專心做自己的事", delta:{d:2, money:3}},
     {label:"私下向朋友抱怨兩句，結果被截圖", delta:{fame:-6, c:-6}}
   ]}),
 
 EV({id:"blurb_backfire", stageMin:1,
   title:"邀請的推薦人，隔天就炎上",
-  desc:function(p){ return p.name+"辛苦邀來一位重量級推薦人掛名，新書上市前一晚，對方卻因為一則舊發言被起底炎上。"; },
+  desc:function(p){ return p.name+"辛苦邀來一位重量級推薦人掛名，書上市前一晚，對方卻因為一則舊發言被起底炎上。"; },
   choices:[
     {label:"連夜撤掉推薦語、緊急改版", delta:{money:-8, d:-5}},
     {label:"賭一把，維持原樣照常上市", delta:{fame:pick([-8,6]), c:-3}}
@@ -434,7 +408,7 @@ EV({id:"belt_typo", title:"書腰上的錯字",
   ]}),
 
 EV({id:"language_police", title:"讀者檢討你用「支語」",
-  desc:function(p){ return "新書文案裡一句「視頻」被讀者截圖公審，留言區吵成兩派，一派護航一派出征，"+p.name+"的通知欄瞬間爆炸。"; },
+  desc:function(p){ return "文案裡一句「視頻」被讀者截圖公審，留言區吵成兩派，一派護航一派出征，"+p.name+"的通知欄瞬間爆炸。"; },
   choices:[
     {label:"發文致歉並修正用詞", delta:{fame:-2, d:-3}},
     {label:"不理會，讓子彈飛一會兒", delta:{fame:pick([-6,3]), c:-2}}
@@ -670,6 +644,74 @@ EV({id:"campaign_hit", paths:["marketing"], stageMin:2, title:"意外做出年�
     {label:"低調收下成果，繼續埋頭做事", delta:{fame:4, d:3}}
   ]}),
 
+/* ---------- translator ---------- */
+EV({id:"mt_pressure", paths:["translator"], stageMin:2, title:"「潤一下機翻就好」",
+  desc:function(p){ return "編輯來信，語氣輕鬆：「這本不趕，先機翻過一輪，你潤稿就好，費用可以照舊喔（其實打七折）。」"; },
+  choices:[
+    {label:"拒絕，翻譯不是校對機器的殘骸", delta:{a:6, money:-4}},
+    {label:"接受，先求案子別斷", delta:{money:8, d:-6}}
+  ]}),
+
+EV({id:"editor_nag", paths:["translator"], title:"每天傳訊息問進度的編輯",
+  desc:function(p){ return "編輯每天固定時間傳一句「翻得如何了呀」，"+p.name+"開始對那個訊息提示音產生生理反應。"; },
+  choices:[
+    {label:"誠實回報還差多少，附上時間表", delta:{d:3, c:2}},
+    {label:"已讀不回，先裝死", delta:{d:-8, c:-4}}
+  ]}),
+
+EV({id:"author_nitpick", paths:["translator"], stageMin:2, title:"原作者龜毛審稿",
+  desc:function(p){ return "原文作者本人竟然懂中文，逐句對"+p.name+"的譯文提出「語氣不夠貼近原意」的修改意見，附件是一份密密麻麻的批註。"; },
+  choices:[
+    {label:"耐心逐條溝通、來回討論", delta:{b:6, d:-3}},
+    {label:"直接照對方意見全改，不多爭辯", delta:{c:2, a:-2}}
+  ]}),
+
+EV({id:"credit_missing", paths:["translator"], title:"版權頁沒印上你的名字",
+  desc:function(p){ return "新書到貨，"+p.name+"翻開版權頁——譯者欄位是空的，只印了出版社的名字。"; },
+  choices:[
+    {label:"據理力爭，要求再刷更正", delta:{c:-2, fame:4}},
+    {label:"算了，反正譯者本來就是隱形人", delta:{d:-4}}
+  ]}),
+
+EV({id:"overbooked", paths:["translator"], title:"三份稿子同時撞上死線",
+  desc:function(p){ return p.name+"當初為了不斷案子，把三本書的交稿日排在同一週，此刻正對著行事曆懷疑人生。"; },
+  choices:[
+    {label:"熬夜硬拚，全部準時交出", delta:{a:4, d:-12}},
+    {label:"老實跟其中一家道歉延期", delta:{money:-8, c:-4}}
+  ]}),
+
+EV({id:"mistranslation", paths:["translator"], title:"誤譯出包被抓包",
+  desc:function(p){ return "有讀者發現"+p.name+"把一個關鍵術語譯錯，截圖附上原文對照瘋傳，留言區笑聲一片。"; },
+  choices:[
+    {label:"公開認錯、附上勘誤表", delta:{d:-3, fame:pick([4,-6])}},
+    {label:"沉默不回應，等話題過去", delta:{fame:-8}}
+  ]}),
+
+EV({id:"translation_award", paths:["translator"], stageMin:2, weight:0.7,
+  requires:function(p){ return p.stats.a>=55; },
+  title:"入圍翻譯獎",
+  desc:function(p){ return p.name+"翻譯的作品意外入圍一個小有份量的翻譯獎，得獎名單公布前，手機通知響個不停。"; },
+  choices:[
+    {label:"準備得獎感言、出席頒獎典禮", delta:{fame:10, c:4}},
+    {label:"低調不去，怕最後沒得獎很尷尬", delta:{fame:3}}
+  ]}),
+
+EV({id:"vanish_temptation", paths:["translator"], weight:1.2,
+  requires:function(p){ return p.stats.d<28; },
+  title:"想消失三天的念頭",
+  desc:function(p){ return p.name+"盯著還剩三分之二沒譯完的稿子，第一次認真理解那些「人間蒸發」的前輩譯者——原來不是不負責任，是真的撐不住了。"; },
+  choices:[
+    {label:"深呼吸，硬著頭皮把稿子生出來", delta:{d:5, a:-2}},
+    {label:"手機關機，先躲三天再說", delta:{money:-10, c:-10}}
+  ]}),
+
+EV({id:"rate_haggle", paths:["translator"], title:"十年沒漲過的翻譯費",
+  desc:function(p){ return "出版社開出的千字翻譯費，"+p.name+"一算，居然跟十年前學生時代接的案子一樣。"; },
+  choices:[
+    {label:"據理力爭，爭取合理費率", delta:{money:6, c:-3}},
+    {label:"接受，先求有案子做", delta:{money:-4, d:-3}}
+  ]}),
+
 /* ---------- bookstore ---------- */
 EV({id:"indie_cry", paths:["store"], title:"隔壁書店老闆的抱怨大會",
   desc:function(p){ return "巷口另一間獨立書店老闆約"+p.name+"喝酒，喝到一半突然紅了眼眶，哭訴「你們知道出版社在偷偷賺多少嗎，我們根本是義工」。"; },
@@ -761,9 +803,35 @@ EV({id:"no_creativity", paths:["store"], weight:1.3,
     {label:"苦笑帶過，先把這句話記在心裡", delta:{d:-4, fame:-2}}
   ]})
 ];
+var EVENTS_BY_ID = {};
+EVENTS.forEach(function(ev){ EVENTS_BY_ID[ev.id]=ev; });
+function getPendingEvent(){ return EVENTS_BY_ID[S.pendingEventId]; }
 
 /* ---------- game state ---------- */
 var S = null;
+var seedInput = "";
+var startPath = null;
+var SAVE_KEY = "pls_save_v1";
+
+function saveProgress(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){}
+}
+function loadProgress(){
+  try{
+    var raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+function clearProgress(){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+}
+function resumeProgress(){
+  var saved = loadProgress();
+  if(!saved) return;
+  S = saved;
+  render();
+}
 
 function newGame(name, pathKey, background){
   var base = PATHS[pathKey].start;
@@ -777,32 +845,31 @@ function newGame(name, pathKey, background){
     fame: base.fame,
     stageIdx:0,
     turnInStage:0,
-    totalTurn:0,
     age: STAGES[0].ageStart,
     seed: seedInput || makeSeed(),
+    entries:[],
     log:[],
     flags:{},
     usedEvents:{},
-    phase:"alloc", // alloc | event | result | stageend | ending
-    pendingEvent:null,
-    pendingChoice:null,
+    eventsThisYear:0,
+    phase:"alloc",
+    pendingEventId:null,
     forcedEnding:null
   };
   setSeed(S.seed);
-  startAllocation();
+  startYear();
 }
 
-var seedInput = "";
-
-/* ---------- turn engine ---------- */
-function poolForTurn(){
+/* ---------- turn engine: 1 year = alloc once + 2 events (年初/年中/年末) ---------- */
+function poolForYear(){
   var stageNo = S.stageIdx+1;
-  return 5 + Math.floor(rng()*3) + (stageNo>=3?1:0); // 5-7(+1 late)
+  return 6 + Math.floor(rng()*3) + (stageNo>=3?1:0); // 6-8(+1 late)
 }
 
-function startAllocation(){
+function startYear(){
   S.phase="alloc";
-  S.allocPool = poolForTurn();
+  S.eventsThisYear=0;
+  S.allocPool = poolForYear();
   S.allocSpent = {a:0,b:0,c:0,d:0,e:0};
   render();
 }
@@ -827,45 +894,79 @@ function eligibleEvents(){
 
 function drawEvent(){
   var pool = eligibleEvents();
-  if(pool.length===0){ afterEvent(); return; }
+  if(pool.length===0){ continueAfterEvent(); return; }
   var totalW = pool.reduce(function(s,e){return s+e.weight;},0);
   var r = rng()*totalW;
   var chosen = pool[pool.length-1];
   for(var i=0;i<pool.length;i++){ r-=pool[i].weight; if(r<=0){ chosen=pool[i]; break; } }
   S.usedEvents[chosen.id]=true;
-  S.pendingEvent = chosen;
+  S.pendingEventId = chosen.id;
   S.phase="event";
-  S.tickerLine = rng()<0.5 ? pick(TICKERS) : null;
-  render();
+  if(rng()<0.4){
+    S.entries.push('<div class="ticker"><b>快訊</b><span>'+esc(pick(TICKERS))+'</span></div>');
+  }
+  render(true);
+}
+
+function verdictFor(delta){
+  var score = 0;
+  ["a","b","c","d","e"].forEach(function(k){ if(delta[k]) score += delta[k]; });
+  if(delta.money) score += delta.money/2;
+  if(delta.fame) score += delta.fame*1.3;
+  if(score>=9) return {cls:"up", text:"► 大有斬獲"};
+  if(score>=3) return {cls:"up", text:"► 小有進展"};
+  if(score>-3) return {cls:"flat", text:"► 有得有失"};
+  if(score>-9) return {cls:"down", text:"► 元氣大傷"};
+  return {cls:"down", text:"► 重挫"};
 }
 
 function resolveChoice(idx){
-  var ev = S.pendingEvent;
+  var ev = getPendingEvent();
   var choice = ev.choices[idx];
-  var delta = choice.delta;
-  var deltaList = fmtDelta(S, delta);
-  applyDelta(S, delta);
-  S.lastResult = {title:ev.title, choiceLabel:choice.label, deltaList:deltaList};
+  var deltaList = fmtDelta(S, choice.delta);
+  var verdict = verdictFor(choice.delta);
+  applyDelta(S, choice.delta);
+  var deltaHTML = deltaList.map(function(d){
+    var cls = d.val>0?"pos":"neg"; var sign = d.val>0?"+":"";
+    return '<span class="'+cls+'">'+esc(d.label)+' '+sign+d.val+(d.unit||"")+'</span>';
+  }).join("");
+  S.entries.push(
+    '<div class="entry"><div class="esub">'+S.age+' 歲 · '+BEAT_LABELS[S.eventsThisYear+1]+'</div>'+
+    '<div class="etitle">'+esc(ev.title)+'</div>'+
+    '<p>'+esc(ev.desc(S))+'</p>'+
+    '<div class="picked">你選擇了：「'+esc(choice.label)+'」</div>'+
+    '<div class="verdict '+verdict.cls+'">'+verdict.text+'</div>'+
+    '<div class="delta">'+(deltaHTML||'<span style="color:var(--dim);background:none;border:none;padding:0;">（沒有明顯變化）</span>')+'</div></div>'
+  );
   S.log.push({age:S.age, title:ev.title, choice:choice.label});
-  S.phase="result";
-  render();
+  S.pendingEventId = null;
+  S.phase="post";
+  render(true);
 }
 
-function afterEvent(){
+function continueAfterEvent(){
+  S.eventsThisYear++;
   checkCrisis();
   if(S.phase==="ending") return;
+  if(S.eventsThisYear<2){ drawEvent(); return; }
+  afterYear();
+}
+
+function afterYear(){
   S.turnInStage++;
-  S.totalTurn++;
   S.age++;
   if(S.turnInStage>=STAGES[S.stageIdx].turns){
+    var finishedStage = STAGES[S.stageIdx];
     S.stageIdx++;
     S.turnInStage=0;
     if(S.stageIdx>=STAGES.length){ computeEnding(); return; }
+    var nextStage = STAGES[S.stageIdx];
+    S.entries.push('<div class="stagebreak">'+finishedStage.label+' 結束　·　邁入 '+nextStage.label+'</div>');
     S.phase="stageend";
-    render();
+    render(true);
     return;
   }
-  startAllocation();
+  startYear();
 }
 
 function bankruptThreshold(){
@@ -881,10 +982,7 @@ function checkCrisis(){
   }
 }
 
-function continueFromStageEnd(){
-  S.phase="alloc";
-  startAllocation();
-}
+function continueFromStageEnd(){ startYear(); }
 
 /* ---------- allocator UI logic ---------- */
 function allocSpentTotal(){
@@ -903,29 +1001,24 @@ function allocDec(k){
 
 /* ---------- endings ---------- */
 function computeEnding(){
-  var s=S.stats, path=S.path;
+  var path=S.path;
   var out;
   if(S.forcedEnding==="crushed" || (S.money<=bankruptThreshold())){
     out = crushedEnding();
-  } else if(path==="author"){
-    out = authorEnding();
-  } else if(path==="editor"){
-    out = editorEnding();
-  } else if(path==="marketing"){
-    out = marketingEnding();
-  } else {
-    out = storeEnding();
-  }
+  } else if(path==="author"){ out = authorEnding(); }
+  else if(path==="editor"){ out = editorEnding(); }
+  else if(path==="marketing"){ out = marketingEnding(); }
+  else if(path==="translator"){ out = translatorEnding(); }
+  else { out = storeEnding(); }
   S.ending = out;
   S.phase="ending";
-  render();
+  render(true);
 }
 
 function crushedEnding(){
   var jobs=["超商大夜班店員","保險業務","外送員","房仲助理","客服中心","補習班班導"];
   return {
-    tag:"bad",
-    title:"被現實擊垮",
+    tag:"bad", title:"被現實擊垮",
     text:S.name+"最終沒能撐過去。積欠的帳單、透支的體力，比任何一篇負評都更誠實地宣告了結局。"+
       "離開出版業那天，"+S.name+"沒有告別式，只在社群發了一句「謝謝這幾年」。"+
       "現在的"+S.name+"，是一名"+pick(jobs)+"——薪水準時入帳，這件事本身，就已經是一種奢侈。"
@@ -994,6 +1087,28 @@ function marketingEnding(){
     text:S.name+"沒有大爆款，也沒有大災難，就這樣一檔接一檔地把案子做完。這份工作教會他最重要的事：預算永遠不夠，截止日永遠提前。"};
 }
 
+function translatorEnding(){
+  var s=S.stats;
+  if(s.a>=80 && s.b>=75 && S.fame>=60){
+    return {tag:"great", title:"讓原作者親自道謝的譯者",
+      text:S.name+"翻譯的作品拿下國際翻譯獎，原作者在得獎感言裡特別提到「沒有這個譯本，我的書到不了這裡」。長年隱形的名字，終於被念了出來。"};
+  }
+  if(s.a>=60 && s.c>=50){
+    return {tag:"good", title:"編輯搶著指定的資深譯者",
+      text:S.name+"接案不再需要主動投履歷，反而是編輯搶著把稿子留給他。價碼依然稱不上優渥，但至少，案子從不斷。"};
+  }
+  if(S.money>=0 && s.a>=45){
+    return {tag:"neutral", title:"穩定接案的職業譯者",
+      text:S.name+"的名字很少出現在書封上，卻穩穩出現在一本又一本書的版權頁裡。沒有人記得他的臉，但很多人讀過他的字。"};
+  }
+  if(s.d<=25 || S.flags.disappeared){
+    return {tag:"bad", title:"轉職：從此不再回覆任何一封邀稿信",
+      text:S.name+"最終也活成了自己曾經恐懼的那種傳說——一封邀稿信、一句「已讀不回」，然後徹底消失在業界的通訊錄裡。"};
+  }
+  return {tag:"neutral", title:"在deadline裡浮沉的自由譯者",
+    text:S.name+"還在接案，還在趕稿，行事曆上永遠有下一個死線。這份工作沒有掌聲，只有一本又一本悄悄完成的書。"};
+}
+
 function storeEnding(){
   var s=S.stats;
   if(s.b>=68 && s.c>=65 && S.fame>=70){
@@ -1017,7 +1132,6 @@ function storeEnding(){
 }
 
 /* ---------- render ---------- */
-function el(html){ var d=document.createElement("div"); d.innerHTML=html; return d.firstElementChild; }
 function esc(s){ return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];}); }
 
 function statBarsHTML(){
@@ -1033,73 +1147,84 @@ function statBarsHTML(){
   return '<div class="ledger">'+cells+'</div>';
 }
 
-function topline(){
+function lampsHTML(){
+  return '<div class="lamps">'+BEAT_LABELS.map(function(label,i){
+    var cls = "lamp";
+    if(i<S.eventsThisYear || (i===0 && S.phase!=="alloc")) cls+=" done";
+    if((i===0 && S.phase==="alloc") || (i===S.eventsThisYear+1 && (S.phase==="event"||S.phase==="post"))) cls+=" now";
+    return '<span class="'+cls+'">'+label+'</span>';
+  }).join("")+'</div>';
+}
+
+function headerHTML(){
   var stage = STAGES[S.stageIdx];
-  return '<div class="topline"><span class="stage-pill">'+stage.label+' · 第 '+(S.turnInStage+1)+'/'+stage.turns+' 年</span>'+
-    '<span>'+S.age+' 歲 · '+PATHS[S.path].noun+' '+esc(S.name)+' · 種子 '+esc(S.seed)+'</span></div>';
-}
-
-function render(){
-  var app = document.getElementById("app");
-  if(!S){ app.innerHTML = renderStart(); bindStart(); return; }
-  if(S.phase==="alloc"){ app.innerHTML = topline()+statBarsHTML()+renderAlloc(); bindAlloc(); }
-  else if(S.phase==="event"){ app.innerHTML = topline()+statBarsHTML()+renderEvent(); bindEvent(); }
-  else if(S.phase==="result"){ app.innerHTML = topline()+statBarsHTML()+renderResult(); bindResult(); }
-  else if(S.phase==="stageend"){ app.innerHTML = renderStageEnd(); bindStageEnd(); }
-  else if(S.phase==="ending"){ app.innerHTML = renderEnding(); bindEnding(); }
-}
-
-/* start screen */
-function renderStart(){
-  var cards = Object.keys(PATHS).map(function(k){
-    var p = PATHS[k];
-    var statNames = p.order.map(function(o){return p.labels[o];}).join(" ／ ");
-    return '<div class="pathcard" data-path="'+k+'"><h3>'+p.label+'</h3><p>'+p.blurb+'</p><div class="stats">'+statNames+'</div></div>';
-  }).join("");
-  return '<div class="page">'+
-    '<h2 class="title">角色設定</h2>'+
-    '<div class="sub">Character Sheet</div>'+
-    '<label class="field"><span class="lbl">筆名 / 姓名</span><input type="text" id="nameInput" placeholder="例如：林小記" maxlength="12"></label>'+
-    '<label class="field"><span class="lbl">選擇路線</span></label>'+
-    '<div class="paths" id="pathPicker">'+cards+'</div>'+
-    '<div id="bgWrap"></div>'+
-    '<label class="field" style="margin-top:14px;"><span class="lbl">世界種子（同種子＋同選擇＝同人生）</span>'+
-      '<div style="display:flex; gap:8px;"><input type="text" id="seedInput" placeholder="留空則隨機" style="flex:1;">'+
-      '<button class="ghost" id="rerollSeed" type="button">換一個</button></div></label>'+
-    '<div class="actions"><button class="primary" id="startBtn">開始職涯 ▸ 新人期</button></div>'+
+  return '<div class="hdr">'+
+    '<div class="topline"><span class="stage-pill">'+stage.label+' · 第 '+(S.turnInStage+1)+'/'+stage.turns+' 年</span>'+
+    '<span>'+S.age+' 歲 · '+PATHS[S.path].noun+' '+esc(S.name)+' · 種子 '+esc(S.seed)+'</span></div>'+
+    lampsHTML()+statBarsHTML()+
     '</div>';
 }
-var startPath = null;
-function bgPickerHTML(){
-  if(startPath!=="store") return "";
-  var opts = Object.keys(BACKGROUNDS).map(function(k){
-    return '<label><input type="radio" name="bg" value="'+k+'" '+(k==="normal"?"checked":"")+'><span>'+BACKGROUNDS[k].label+'</span></label>';
-  }).join("");
-  return '<label class="field"><span class="lbl">家境（影響起始資金與資金上限）</span><div class="radiorow">'+opts+'</div></label>';
-}
-function bindStart(){
-  var picker = document.getElementById("pathPicker");
-  picker.addEventListener("click", function(e){
-    var card = e.target.closest(".pathcard");
-    if(!card) return;
-    startPath = card.getAttribute("data-path");
-    Array.prototype.forEach.call(picker.children, function(c){ c.classList.toggle("sel", c===card); });
-    document.getElementById("bgWrap").innerHTML = bgPickerHTML();
-  });
-  document.getElementById("rerollSeed").addEventListener("click", function(){
-    document.getElementById("seedInput").value = makeSeed();
-  });
-  document.getElementById("startBtn").addEventListener("click", function(){
-    var name = document.getElementById("nameInput").value.trim();
-    if(!startPath){ alert("請先選擇一條路線。"); return; }
-    seedInput = document.getElementById("seedInput").value.trim();
-    var bgEl = document.querySelector('input[name="bg"]:checked');
-    newGame(name, startPath, bgEl?bgEl.value:"normal");
-  });
+
+function render(scrollDown){
+  var app = document.getElementById("app");
+  if(!S){ app.innerHTML = renderStart(); bindStart(); return; }
+  if(S.phase==="ending"){ clearProgress(); app.innerHTML = renderEnding(); bindEnding(); return; }
+  saveProgress();
+
+  var pendingLog = "";
+  var footer = "";
+  if(S.phase==="alloc"){
+    footer = renderAllocFooter();
+  } else if(S.phase==="event"){
+    var ev = getPendingEvent();
+    pendingLog = '<div class="entry pending"><div class="esub">'+S.age+' 歲 · '+BEAT_LABELS[S.eventsThisYear+1]+'</div>'+
+      '<div class="etitle">'+esc(ev.title)+'</div><p>'+esc(ev.desc(S))+'</p></div>';
+    footer = '<div class="choices">'+ev.choices.map(function(c,i){
+      return '<button class="choice" data-choice="'+i+'">'+esc(c.label)+'</button>';
+    }).join("")+'</div>';
+  } else if(S.phase==="post"){
+    footer = '<div class="actions"><button class="primary" id="nextBtn">繼續</button></div>';
+  } else if(S.phase==="stageend"){
+    var nextStage = STAGES[S.stageIdx];
+    footer = '<div class="actions"><button class="primary" id="stageContinue">進入'+nextStage.label+'</button></div>';
+  }
+
+  app.innerHTML = headerHTML()+
+    '<div class="log" id="logArea">'+S.entries.join("")+pendingLog+'</div>'+
+    '<div class="ftr" id="ftrArea">'+footer+'</div>';
+
+  bindPhase();
+  if(S.phase==="post"){
+    var logEl = document.getElementById("logArea");
+    var last = logEl && logEl.lastElementChild;
+    if(last && last.classList.contains("entry")) last.classList.add("fresh");
+  }
+  if(scrollDown){
+    requestAnimationFrame(function(){ window.scrollTo({top:document.body.scrollHeight, behavior:"auto"}); });
+  }
 }
 
-/* allocation */
-function renderAlloc(){
+function bindPhase(){
+  if(S.phase==="alloc"){
+    document.querySelectorAll("[data-inc]").forEach(function(b){ b.addEventListener("click", function(){ allocInc(b.getAttribute("data-inc")); }); });
+    document.querySelectorAll("[data-dec]").forEach(function(b){ b.addEventListener("click", function(){ allocDec(b.getAttribute("data-dec")); }); });
+    var cb = document.getElementById("confirmAlloc");
+    if(cb) cb.addEventListener("click", confirmAllocation);
+  } else if(S.phase==="event"){
+    document.querySelectorAll("[data-choice]").forEach(function(b){
+      b.addEventListener("click", function(){ resolveChoice(parseInt(b.getAttribute("data-choice"),10)); });
+    });
+  } else if(S.phase==="post"){
+    var nb = document.getElementById("nextBtn");
+    if(nb) nb.addEventListener("click", continueAfterEvent);
+  } else if(S.phase==="stageend"){
+    var sc = document.getElementById("stageContinue");
+    if(sc) sc.addEventListener("click", continueFromStageEnd);
+  }
+}
+
+/* allocation footer */
+function renderAllocFooter(){
   var order = PATHS[S.path].order, labels=PATHS[S.path].labels;
   var spent = allocSpentTotal();
   var rows = order.map(function(k){
@@ -1109,100 +1234,211 @@ function renderAlloc(){
       '<div class="alloc-btns"><button data-dec="'+k+'" '+(S.allocSpent[k]<=0?"disabled":"")+'>−</button>'+
       '<button data-inc="'+k+'" '+(spent>=S.allocPool?"disabled":"")+'>＋</button></div></div>';
   }).join("");
-  return '<div class="page">'+
-    '<h2 class="title">今年的心力分配</h2>'+
-    '<div class="sub">Annual Allocation</div>'+
-    '<p>這一年，'+esc(S.name)+'能投入的心力有限，怎麼分配，決定接下來會遇上什麼。</p>'+
+  return '<p class="hint">年初：這一年能投入的心力有限，分配給誰，決定接下來會遇上什麼。</p>'+
     '<div class="pool">可分配點數：'+(S.allocPool-spent)+' / '+S.allocPool+'</div>'+
     rows+
-    '<div class="actions"><button class="primary" id="confirmAlloc">確定分配，迎接這一年</button></div>'+
-    '</div>';
-}
-function bindAlloc(){
-  document.querySelectorAll("[data-inc]").forEach(function(b){ b.addEventListener("click", function(){ allocInc(b.getAttribute("data-inc")); }); });
-  document.querySelectorAll("[data-dec]").forEach(function(b){ b.addEventListener("click", function(){ allocDec(b.getAttribute("data-dec")); }); });
-  document.getElementById("confirmAlloc").addEventListener("click", confirmAllocation);
+    '<div class="actions"><button class="primary" id="confirmAlloc">確定分配，迎接這一年</button></div>';
 }
 
-/* event */
-function renderEvent(){
-  var ev = S.pendingEvent;
-  var ticker = S.tickerLine ? '<div class="ticker"><b>快訊</b><span>'+esc(S.tickerLine)+'</span></div>' : "";
-  var choices = ev.choices.map(function(c,i){
-    return '<button class="choice" data-choice="'+i+'">'+esc(c.label)+'</button>';
+/* start screen */
+var showSeedField = false;
+function renderStart(){
+  var cards = Object.keys(PATHS).map(function(k){
+    var p = PATHS[k];
+    var statNames = p.order.map(function(o){return p.labels[o];}).join(" ／ ");
+    return '<div class="pathcard" data-path="'+k+'"><h3>'+p.label+'</h3><p>'+p.blurb+'</p><div class="stats">'+statNames+'</div></div>';
   }).join("");
-  return '<div class="page">'+
-    ticker+
-    '<h2 class="title">'+esc(ev.title)+'</h2>'+
-    '<div class="sub">Event</div>'+
-    '<p>'+esc(ev.desc(S))+'</p>'+
-    '<div class="choices">'+choices+'</div>'+
+  var saved = loadProgress();
+  var resumeBlock = "";
+  if(saved){
+    var st = STAGES[saved.stageIdx];
+    resumeBlock = '<div class="startpage" style="margin-bottom:14px;">'+
+      '<div class="sub">上次玩到一半</div>'+
+      '<p style="margin-bottom:10px;">'+PATHS[saved.path].noun+' '+esc(saved.name)+'　·　'+saved.age+' 歲　·　'+st.label+'</p>'+
+      '<div class="actions"><button class="primary" id="resumeBtn">繼續上次的旅程</button>'+
+      '<button class="ghost" id="discardSaveBtn">捨棄，重新開始</button></div></div>';
+  }
+  var seedBlock = showSeedField
+    ? '<label class="field"><span class="lbl">世界種子（同種子＋同選擇＝同人生）</span>'+
+      '<div style="display:flex; gap:8px;"><input type="text" id="seedInput" placeholder="留空則隨機" style="flex:1;">'+
+      '<button class="ghost" id="rerollSeed" type="button">換一個</button></div></label>'
+    : '<button class="ghost" id="seedToggle" type="button" style="margin-bottom:14px;">進階：自訂世界種子</button>';
+  return resumeBlock+'<div class="startpage">'+
+    '<h2 class="title">角色設定</h2>'+
+    '<div class="sub">Character Sheet</div>'+
+    '<label class="field"><span class="lbl">筆名 / 姓名</span><input type="text" id="nameInput" placeholder="例如：林小記" maxlength="12"></label>'+
+    '<label class="field"><span class="lbl">選擇路線</span></label>'+
+    '<div class="paths" id="pathPicker">'+cards+'</div>'+
+    '<div id="bgWrap"></div>'+
+    seedBlock+
+    '<div class="actions"><button class="primary" id="startBtn">開始職涯 ▸ 新人期</button></div>'+
     '</div>';
 }
-function bindEvent(){
-  document.querySelectorAll("[data-choice]").forEach(function(b){
-    b.addEventListener("click", function(){ resolveChoice(parseInt(b.getAttribute("data-choice"),10)); });
+function bgPickerHTML(){
+  if(startPath!=="store") return "";
+  var opts = Object.keys(BACKGROUNDS).map(function(k){
+    return '<label><input type="radio" name="bg" value="'+k+'" '+(k==="normal"?"checked":"")+'><span>'+BACKGROUNDS[k].label+'</span></label>';
+  }).join("");
+  return '<label class="field"><span class="lbl">家境（影響起始資金與資金上限）</span><div class="radiorow">'+opts+'</div></label>';
+}
+function bindStart(){
+  var resumeBtn = document.getElementById("resumeBtn");
+  if(resumeBtn) resumeBtn.addEventListener("click", resumeProgress);
+  var discardBtn = document.getElementById("discardSaveBtn");
+  if(discardBtn) discardBtn.addEventListener("click", function(){ clearProgress(); render(); });
+
+  var picker = document.getElementById("pathPicker");
+  picker.addEventListener("click", function(e){
+    var card = e.target.closest(".pathcard");
+    if(!card) return;
+    startPath = card.getAttribute("data-path");
+    Array.prototype.forEach.call(picker.children, function(c){ c.classList.toggle("sel", c===card); });
+    document.getElementById("bgWrap").innerHTML = bgPickerHTML();
   });
-}
-
-/* result */
-function renderResult(){
-  var r = S.lastResult;
-  var deltas = r.deltaList.map(function(d){
-    var cls = d.val>0?"pos":"neg";
-    var sign = d.val>0?"+":"";
-    return '<span class="'+cls+'">'+d.label+' '+sign+d.val+(d.unit||"")+'</span>';
-  }).join("");
-  return '<div class="page">'+
-    '<h2 class="title">'+esc(r.title)+'</h2>'+
-    '<div class="sub">Outcome</div>'+
-    '<div class="result">你選擇了：「'+esc(r.choiceLabel)+'」'+
-      '<div class="delta">'+(deltas||"（沒有明顯變化）")+'</div></div>'+
-    '<div class="actions"><button class="primary" id="nextBtn">繼續</button></div>'+
-    '</div>';
-}
-function bindResult(){
-  document.getElementById("nextBtn").addEventListener("click", afterEvent);
-}
-
-/* stage end */
-function renderStageEnd(){
-  var prevStage = STAGES[S.stageIdx-1];
-  var nextStage = STAGES[S.stageIdx];
-  return '<div class="page">'+
-    '<h2 class="title">'+prevStage.label+'結束</h2>'+
-    '<div class="sub">Chapter Break</div>'+
-    '<p>'+esc(S.name)+'的'+prevStage.label+'告一段落。接下來是<b>'+nextStage.label+'</b>——牌桌上的籌碼，會越堆越高，或越剩越少。</p>'+
-    '<div class="actions"><button class="primary" id="stageContinue">進入'+nextStage.label+'</button></div>'+
-    '</div>';
-}
-function bindStageEnd(){
-  document.getElementById("stageContinue").addEventListener("click", continueFromStageEnd);
+  var seedToggle = document.getElementById("seedToggle");
+  if(seedToggle) seedToggle.addEventListener("click", function(){ showSeedField = true; render(); });
+  var rerollBtn = document.getElementById("rerollSeed");
+  if(rerollBtn) rerollBtn.addEventListener("click", function(){
+    document.getElementById("seedInput").value = makeSeed();
+  });
+  document.getElementById("startBtn").addEventListener("click", function(){
+    var name = document.getElementById("nameInput").value.trim();
+    if(!startPath){ alert("請先選擇一條路線。"); return; }
+    var seedEl = document.getElementById("seedInput");
+    seedInput = seedEl ? seedEl.value.trim() : "";
+    var bgEl = document.querySelector('input[name="bg"]:checked');
+    newGame(name, startPath, bgEl?bgEl.value:"normal");
+  });
 }
 
 /* ending */
 function renderEnding(){
   var e = S.ending;
   var historyLines = S.log.map(function(l){ return l.age+' 歲　'+esc(l.title)+'　→　'+esc(l.choice); }).join("<br>");
-  return '<div class="page">'+
+  return '<div class="startpage">'+
     '<span class="ending-tag '+e.tag+'">Ending</span>'+
     '<h2 class="title">'+esc(e.title)+'</h2>'+
-    '<div class="sub">'+PATHS[S.path].noun+' '+esc(S.name)+' · 享年心境 '+S.age+' 歲 · 種子 '+esc(S.seed)+'</div>'+
+    '<div class="sub">'+PATHS[S.path].noun+' '+esc(S.name)+' · 心境 '+S.age+' 歲 · 種子 '+esc(S.seed)+'</div>'+
     '<p>'+e.text+'</p>'+
     statBarsHTML()+
-    '<div class="sub" style="margin-top:6px;">生涯記事</div>'+
+    '<div class="sub" style="margin-top:14px;">生涯記事</div>'+
     '<div class="history">'+(historyLines||"（平淡的一生，沒留下什麼紀錄）")+'</div>'+
-    '<div class="actions"><button class="primary" id="restartBtn">重新開始人生</button>'+
+    '<div class="actions"><button class="primary" id="downloadCardBtn">下載結果卡（圖片）</button>'+
+    '<button class="ghost" id="restartBtn">重新開始人生</button>'+
     '<button class="ghost" id="sameSeedBtn">用同一顆種子再來一次</button></div>'+
     '</div>';
 }
 function bindEnding(){
-  document.getElementById("restartBtn").addEventListener("click", function(){ S=null; seedInput=""; startPath=null; render(); });
+  document.getElementById("downloadCardBtn").addEventListener("click", downloadResultCard);
+  document.getElementById("restartBtn").addEventListener("click", function(){ S=null; seedInput=""; startPath=null; render(); window.scrollTo(0,0); });
   document.getElementById("sameSeedBtn").addEventListener("click", function(){
     var seed=S.seed, path=S.path, name=S.name, bg=S.background;
     seedInput = seed;
     newGame(name, path, bg);
+    window.scrollTo(0,0);
   });
+}
+
+/* ---------- shareable result card ---------- */
+var TAG_COLOR = { great:"#d3a24d", good:"#8fbf8a", neutral:"#a89d86", bad:"#d9705a" };
+var TAG_TEXT = { great:"GREAT ENDING", good:"GOOD ENDING", neutral:"NEUTRAL ENDING", bad:"BAD ENDING" };
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+  var chars = String(text).split("");
+  var line = "";
+  var lines = [];
+  for(var i=0;i<chars.length;i++){
+    var test = line+chars[i];
+    if(ctx.measureText(test).width>maxWidth && line!==""){ lines.push(line); line=chars[i]; }
+    else{ line=test; }
+  }
+  if(line) lines.push(line);
+  lines.forEach(function(l,idx){ ctx.fillText(l, x, y+idx*lineHeight); });
+  return lines.length*lineHeight;
+}
+
+function makeResultCardDataURL(){
+  var e = S.ending;
+  var W=800, H=1000;
+  var cv = document.createElement("canvas");
+  cv.width=W; cv.height=H;
+  var ctx = cv.getContext("2d");
+
+  ctx.fillStyle = "#14120f";
+  ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = "#3a3226";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(24,24,W-48,H-48);
+
+  ctx.fillStyle = "#a89d86";
+  ctx.font = "13px monospace";
+  ctx.fillText("PUBLISHING LIFE SIMULATOR", 56, 76);
+
+  ctx.fillStyle = TAG_COLOR[e.tag]||"#a89d86";
+  ctx.font = "bold 13px monospace";
+  ctx.fillText(TAG_TEXT[e.tag]||"ENDING", 56, 102);
+  ctx.strokeStyle = TAG_COLOR[e.tag]||"#a89d86";
+  ctx.strokeRect(50,86,ctx.measureText(TAG_TEXT[e.tag]||"ENDING").width+14,24);
+
+  ctx.fillStyle = "#ece4d2";
+  ctx.font = "bold 40px serif";
+  var titleH = wrapText(ctx, e.title, 56, 168, W-112, 48);
+
+  var subY = 168+titleH+18;
+  ctx.fillStyle = "#a89d86";
+  ctx.font = "16px serif";
+  ctx.fillText(PATHS[S.path].noun+" "+S.name+"　·　"+S.age+" 歲", 56, subY);
+
+  ctx.strokeStyle = "#3a3226";
+  ctx.beginPath(); ctx.moveTo(56, subY+24); ctx.lineTo(W-56, subY+24); ctx.stroke();
+
+  ctx.fillStyle = "#ece4d2";
+  ctx.font = "17px serif";
+  var bodyY = subY+66;
+  bodyY += wrapText(ctx, e.text, 56, bodyY, W-112, 30);
+
+  var order = PATHS[S.path].order, labels = PATHS[S.path].labels;
+  var statsY = Math.max(bodyY+50, H-360);
+  ctx.fillStyle = "#d3a24d";
+  ctx.font = "12px monospace";
+  ctx.fillText("FINAL STATUS", 56, statsY);
+  statsY += 26;
+  var colW = (W-112)/2;
+  var allStats = order.map(function(k){ return {label:labels[k], val:S.stats[k], max:100}; });
+  allStats.push({label:"財力", val:S.money, unit:" 萬"});
+  allStats.push({label:"知名度", val:S.fame, max:100});
+  allStats.forEach(function(st,i){
+    var col = i%2, row = Math.floor(i/2);
+    var x = 56+col*colW, y = statsY+row*54;
+    ctx.fillStyle = "#a89d86";
+    ctx.font = "12px monospace";
+    ctx.fillText(st.label, x, y);
+    ctx.fillStyle = "#ece4d2";
+    ctx.font = "bold 20px monospace";
+    ctx.fillText(String(st.val)+(st.unit||""), x, y+24);
+    if(st.max){
+      ctx.strokeStyle="#3a3226"; ctx.fillStyle="#3a3226";
+      ctx.fillRect(x, y+30, colW-20, 4);
+      ctx.fillStyle = "#c1503a";
+      ctx.fillRect(x, y+30, Math.max(0,Math.min(1,st.val/st.max))*(colW-20), 4);
+    }
+  });
+
+  ctx.fillStyle = "#a89d86";
+  ctx.font = "11px monospace";
+  ctx.fillText("種子 "+S.seed+"　·　publishing-life-simulator", 56, H-40);
+
+  return cv.toDataURL("image/png");
+}
+
+function downloadResultCard(){
+  var url = makeResultCardDataURL();
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "出版人生-"+S.name+"-"+S.ending.title+".png";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 render();
