@@ -1,0 +1,1210 @@
+<!-- title -->
+<title>出版人生模擬器</title>
+
+<style>
+:root{
+  --paper:#ECE7D9;
+  --paper-2:#E1DAC6;
+  --ink:#242217;
+  --ink-soft:#57503f;
+  --rule:#c7bda0;
+  --red:#a83f26;
+  --gold:#8a6a2f;
+  --good:#3f6b4a;
+  --bad:#a83f26;
+  --shadow: 0 1px 0 rgba(0,0,0,.05);
+  --font-display: "Iowan Old Style","Palatino Linotype","Songti TC","PMingLiU",Georgia,serif;
+  --font-body: "Palatino Linotype","Iowan Old Style","PMingLiU",Georgia,serif;
+  --font-mono: ui-monospace,"SF Mono",Consolas,"Cascadia Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#1b1a15;
+    --paper-2:#232019;
+    --ink:#e7e0cc;
+    --ink-soft:#b3a98e;
+    --rule:#4a4536;
+    --red:#d9835f;
+    --gold:#cfa85c;
+    --good:#7fb28d;
+    --bad:#d9835f;
+    --shadow: 0 1px 0 rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1b1a15; --paper-2:#232019; --ink:#e7e0cc; --ink-soft:#b3a98e;
+  --rule:#4a4536; --red:#d9835f; --gold:#cfa85c; --good:#7fb28d; --bad:#d9835f;
+  --shadow: 0 1px 0 rgba(0,0,0,.3);
+}
+:root[data-theme="light"]{
+  --paper:#ECE7D9; --paper-2:#E1DAC6; --ink:#242217; --ink-soft:#57503f;
+  --rule:#c7bda0; --red:#a83f26; --gold:#8a6a2f; --good:#3f6b4a; --bad:#a83f26;
+  --shadow: 0 1px 0 rgba(0,0,0,.05);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(ellipse at top, rgba(168,63,38,0.04), transparent 60%),
+    var(--paper);
+  color:var(--ink);
+  font-family:var(--font-body);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{
+  max-width:720px;
+  margin:0 auto;
+  padding:28px 18px 80px;
+}
+.masthead{
+  display:flex; align-items:baseline; justify-content:space-between;
+  border-bottom:2px solid var(--ink);
+  padding-bottom:10px; margin-bottom:22px;
+  flex-wrap:wrap; gap:8px;
+}
+.masthead h1{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:1.5rem;
+  letter-spacing:.02em;
+  margin:0;
+  text-wrap:balance;
+}
+.masthead .kicker{
+  font-family:var(--font-mono);
+  font-size:.68rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.page{
+  background:var(--paper-2);
+  border:1px solid var(--rule);
+  border-radius:2px;
+  box-shadow:var(--shadow);
+  padding:26px 24px;
+  margin-bottom:18px;
+}
+h2.title{
+  font-family:var(--font-display);
+  font-size:1.25rem;
+  margin:0 0 6px;
+  text-wrap:balance;
+}
+.sub{
+  font-family:var(--font-mono);
+  font-size:.72rem;
+  color:var(--ink-soft);
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin-bottom:16px;
+}
+p{ line-height:1.75; margin:0 0 14px; font-size:1rem; }
+.byline{ color:var(--ink-soft); font-size:.85rem; font-style:italic; margin-bottom:16px;}
+
+/* ledger stat bar */
+.ledger{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
+  gap:10px 14px;
+  background:var(--paper);
+  border:1px solid var(--rule);
+  padding:14px 16px;
+  margin-bottom:18px;
+  font-family:var(--font-mono);
+}
+.ledger .cell{ display:flex; flex-direction:column; gap:5px; }
+.ledger .k{ font-size:.62rem; letter-spacing:.08em; color:var(--ink-soft); text-transform:uppercase; white-space:nowrap;}
+.ledger .v{ font-size:.95rem; font-variant-numeric:tabular-nums; font-weight:600; }
+.ledger .bar{ height:5px; background:var(--rule); border-radius:2px; overflow:hidden; }
+.ledger .bar i{ display:block; height:100%; background:var(--red); }
+.ledger .money.neg .v{ color:var(--bad); }
+.topline{
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft);
+  margin-bottom:10px; letter-spacing:.05em;
+}
+.stage-pill{
+  display:inline-block; border:1px solid var(--ink); padding:2px 10px;
+  border-radius:20px; font-family:var(--font-mono); font-size:.68rem;
+  letter-spacing:.08em; color:var(--ink);
+}
+
+/* choices */
+.choices{ display:flex; flex-direction:column; gap:10px; margin-top:18px; }
+button.choice{
+  text-align:left;
+  font-family:var(--font-body);
+  font-size:.95rem;
+  background:var(--paper);
+  border:1px solid var(--ink);
+  color:var(--ink);
+  padding:12px 16px;
+  cursor:pointer;
+  line-height:1.5;
+  transition:transform .08s ease, background .15s ease;
+}
+button.choice:hover{ background:var(--red); color:var(--paper); border-color:var(--red); }
+button.choice:active{ transform:scale(.99); }
+button.choice:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+button.primary{
+  font-family:var(--font-mono);
+  font-size:.78rem; letter-spacing:.08em; text-transform:uppercase;
+  background:var(--ink); color:var(--paper);
+  border:1px solid var(--ink);
+  padding:11px 20px; cursor:pointer;
+}
+button.primary:hover{ background:var(--red); border-color:var(--red); }
+button.primary:focus-visible{ outline:2px solid var(--gold); outline-offset:2px;}
+button.ghost{
+  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.06em;
+  background:transparent; border:1px solid var(--rule); color:var(--ink-soft);
+  padding:8px 14px; cursor:pointer;
+}
+button.ghost:hover{ border-color:var(--ink); color:var(--ink); }
+
+/* result / stamp */
+.result{
+  border-left:3px solid var(--red);
+  padding:10px 14px;
+  margin:16px 0;
+  background:rgba(168,63,38,0.06);
+  font-size:.95rem;
+}
+.delta{
+  font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft);
+  margin-top:8px; display:flex; flex-wrap:wrap; gap:8px 14px;
+}
+.delta span.pos{ color:var(--good); }
+.delta span.neg{ color:var(--bad); }
+
+/* news ticker */
+.ticker{
+  font-family:var(--font-mono); font-size:.75rem; color:var(--ink-soft);
+  border-top:1px dashed var(--rule); border-bottom:1px dashed var(--rule);
+  padding:8px 0; margin:16px 0; display:flex; gap:8px;
+}
+.ticker b{ color:var(--red); font-weight:700; }
+
+/* start screen path cards */
+.paths{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:18px 0; }
+@media (max-width:520px){ .paths{ grid-template-columns:1fr; } }
+.pathcard{
+  border:1px solid var(--rule); padding:16px; cursor:pointer; background:var(--paper);
+  transition:border-color .15s, background .15s;
+}
+.pathcard:hover{ border-color:var(--red); }
+.pathcard.sel{ border-color:var(--red); background:rgba(168,63,38,0.08); }
+.pathcard h3{ font-family:var(--font-display); margin:0 0 4px; font-size:1.05rem; }
+.pathcard p{ margin:0; font-size:.82rem; color:var(--ink-soft); line-height:1.5; }
+.pathcard .stats{ font-family:var(--font-mono); font-size:.68rem; color:var(--gold); margin-top:8px; letter-spacing:.03em;}
+
+label.field{ display:block; margin-bottom:14px; }
+label.field .lbl{ font-family:var(--font-mono); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); display:block; margin-bottom:6px;}
+input[type=text]{
+  width:100%; font-family:var(--font-body); font-size:1rem; padding:10px 12px;
+  background:var(--paper); border:1px solid var(--ink); color:var(--ink);
+}
+input[type=text]:focus-visible{ outline:2px solid var(--gold); outline-offset:1px; }
+
+.radiorow{ display:flex; gap:8px; flex-wrap:wrap; }
+.radiorow label{
+  font-family:var(--font-mono); font-size:.72rem; border:1px solid var(--rule);
+  padding:7px 12px; cursor:pointer; color:var(--ink-soft);
+}
+.radiorow input{ display:none; }
+.radiorow input:checked + span{ color:var(--ink); }
+.radiorow label:has(input:checked){ border-color:var(--red); color:var(--red); background:rgba(168,63,38,.06); }
+
+/* allocator */
+.alloc-row{ display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--rule); }
+.alloc-row:last-child{ border-bottom:none; }
+.alloc-name{ width:76px; font-family:var(--font-mono); font-size:.78rem; color:var(--ink-soft); flex-shrink:0;}
+.alloc-bar{ flex:1; height:8px; background:var(--rule); border-radius:2px; overflow:hidden; }
+.alloc-bar i{ display:block; height:100%; background:var(--gold); }
+.alloc-btns{ display:flex; gap:4px; }
+.alloc-btns button{
+  width:26px; height:26px; border:1px solid var(--ink); background:var(--paper); color:var(--ink);
+  font-family:var(--font-mono); cursor:pointer; font-size:.85rem; line-height:1;
+}
+.alloc-btns button:disabled{ opacity:.3; cursor:not-allowed; }
+.pool{ font-family:var(--font-mono); font-size:.8rem; color:var(--gold); text-align:right; margin:10px 0 4px; letter-spacing:.06em;}
+
+/* ending */
+.ending-tag{
+  display:inline-block; font-family:var(--font-mono); font-size:.68rem; letter-spacing:.1em;
+  text-transform:uppercase; padding:3px 10px; border:1px solid; margin-bottom:10px;
+}
+.ending-tag.great{ color:var(--gold); border-color:var(--gold); }
+.ending-tag.good{ color:var(--good); border-color:var(--good); }
+.ending-tag.neutral{ color:var(--ink-soft); border-color:var(--rule); }
+.ending-tag.bad{ color:var(--bad); border-color:var(--bad); }
+.history{ font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft); line-height:1.9; }
+.footer-note{ text-align:center; font-family:var(--font-mono); font-size:.68rem; color:var(--ink-soft); margin-top:24px; letter-spacing:.04em;}
+.actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+</style>
+
+<div class="wrap">
+  <div class="masthead">
+    <h1>出版人生模擬器</h1>
+    <div class="kicker">Publishing Life Simulator</div>
+  </div>
+  <div id="app"></div>
+  <div class="footer-note">每個選擇都會被記錄在你的作者簡介裡。同種子＋同選擇＝同人生。</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- rng ---------- */
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function hashSeed(str){
+  var h=1779033703^str.length;
+  for(var i=0;i<str.length;i++){
+    h=Math.imul(h^str.charCodeAt(i),3432918353);
+    h=h<<13|h>>>19;
+  }
+  return function(){
+    h=Math.imul(h^h>>>16,2246822519);
+    h=Math.imul(h^h>>>13,3266489917);
+    return (h ^= h>>>16)>>>0;
+  }();
+}
+function makeSeed(){ return Math.random().toString(36).slice(2,10); }
+var rng = Math.random;
+function setSeed(s){ rng = mulberry32(hashSeed(s)); }
+function ri(min,max){ return Math.floor(rng()*(max-min+1))+min; }
+function pick(arr){ return arr[Math.floor(rng()*arr.length)]; }
+function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+
+/* ---------- static data ---------- */
+var PATHS = {
+  author:{
+    label:"作者", noun:"作家",
+    blurb:"在稿紙與截稿日之間走鋼索，賭一個被記住的名字。",
+    order:["a","b","c","d","e"],
+    labels:{a:"文筆",b:"企劃力",c:"人脈",d:"抗壓性",e:"運氣"},
+    start:{a:38,b:28,c:22,d:30,e:26,money:8,fame:4}
+  },
+  editor:{
+    label:"編輯", noun:"編輯",
+    blurb:"在作者的自尊與老闆的損益表之間，找出一本書能活下來的縫。",
+    order:["a","b","c","d","e"],
+    labels:{a:"文筆",b:"企劃力",c:"人脈",d:"抗壓性",e:"運氣"},
+    start:{a:30,b:32,c:28,d:34,e:22,money:15,fame:2}
+  },
+  marketing:{
+    label:"行銷", noun:"行銷",
+    blurb:"把一本沒人聽過的書，變成大家假裝看過的書。",
+    order:["a","b","c","d","e"],
+    labels:{a:"文筆",b:"企劃力",c:"人脈",d:"抗壓性",e:"運氣"},
+    start:{a:26,b:36,c:32,d:26,e:24,money:12,fame:6}
+  },
+  store:{
+    label:"書店", noun:"書店老闆",
+    blurb:"用租金、腰痛與品味，在電商折扣戰裡守住一間店。",
+    order:["d","a","c","b","e"],
+    labels:{a:"品味",b:"創意",c:"社交",d:"體力",e:"資金"},
+    start:{a:34,b:28,c:24,d:36,e:20,money:10,fame:1}
+  }
+};
+
+var BACKGROUNDS = {
+  normal:{ label:"一般家庭", e:0, money:0 },
+  ok:{ label:"小康家庭", e:12, money:20 },
+  rich:{ label:"含著金湯匙", e:30, money:80 }
+};
+
+var STAGES = [
+  {key:"rookie", label:"新人期", turns:3, ageStart:24},
+  {key:"push", label:"衝刺期", turns:4},
+  {key:"peak", label:"巔峰期", turns:4},
+  {key:"decline", label:"衰退期", turns:3}
+];
+
+var TICKERS = [
+  "產業快訊：實體書店家數連續第五年下滑，業者稱「早就習慣了」。",
+  "產業快訊：某出版集團裁員後隔週辦尾牙，員工形容「氣氛很微妙」。",
+  "產業快訊：電子書訂閱制上線，讀者反映「還是比較想聞書的味道」。",
+  "產業快訊：某暢銷書被抓到內文用 AI 生成後道歉，銷量不降反升。",
+  "產業快訊：文化部標案結果出爐，得標者是「認識的人」，業界表示不意外。",
+  "產業快訊：某作家推特發文「寫作是孤獨的」，底下留言更孤獨。",
+  "產業快訊：書展人潮創新高，結帳排隊人數卻創新低。",
+  "產業快訊：某網紅開了出版社，首發書是自己的語錄。",
+  "產業快訊：翻譯獎揭曉，得主是三年前就已讀不回的那位。",
+  "產業快訊：某出版社老闆受訪表示「我們就是一群愛書的傻子」，員工薪資單沉默。",
+  "產業快訊：紙價再度調漲，印刷廠老闆嘆氣的分貝也調漲。",
+  "產業快訊：某書店貓過世，全國哀悼聲量大於多數新書上市。"
+];
+
+/* ---------- effect helpers ---------- */
+function fmtDelta(p, delta){
+  var out=[];
+  var L = PATHS[p.path].labels;
+  ["a","b","c","d","e"].forEach(function(k){
+    if(delta[k]){
+      out.push({label:L[k], val:delta[k]});
+    }
+  });
+  if(delta.money) out.push({label:"財力", val:delta.money, unit:"萬"});
+  if(delta.fame) out.push({label:"知名度", val:delta.fame});
+  return out;
+}
+function applyDelta(p, delta){
+  ["a","b","c","d","e"].forEach(function(k){
+    if(delta[k]) p.stats[k]=clamp(p.stats[k]+delta[k],0,100);
+  });
+  if(delta.money) p.money += delta.money;
+  if(delta.fame) p.fame = clamp(p.fame+(delta.fame||0),0,100);
+}
+
+/* ---------- event pool ---------- */
+/* stat slots: a=craft/taste b=plan/creative c=network/social d=grit/stamina e=luck/capital */
+function EV(o){ o.weight = o.weight||1; o.paths = o.paths||["all"]; o.stageMin=o.stageMin||1; o.stageMax=o.stageMax||4; return o; }
+
+var EVENTS = [
+EV({id:"health", title:"年度健檢通知單",
+  desc:function(p){ return p.name+"收到健檢報告，醫生指著紅字說：「這些數字，出版業的人我看多了。」"; },
+  choices:[
+    {label:"乖乖排時間去做復健、規律運動", delta:{d:6, money:-3}},
+    {label:"先擋著，稿子／案子比較重要", delta:{d:-8, e:2}}
+  ]}),
+
+EV({id:"ai_wave", once:true, stageMin:2,
+  title:"AI 浪潮打進辦公室",
+  desc:function(p){ return "生成式 AI 工具席捲整個產業，同業一半在恐慌、一半在偷用。"+p.name+"要選一條路。"; },
+  choices:[
+    {label:"認真學工具，把它當助理", delta:{b:10, d:-3}},
+    {label:"堅持純手工，向讀者強調「這是人寫的」", delta:{fame:6, c:-4}}
+  ]}),
+
+EV({id:"pandemic", once:true, stageMax:2,
+  title:"一場誰也沒料到的疫情",
+  desc:function(p){ return "通路全面停擺，線上活動一夕成為主流。"+p.name+"的收入曲線瞬間變成心電圖。"; },
+  choices:[
+    {label:"轉戰線上直播、線上簽書會", delta:{c:6, money:-5, fame:4}},
+    {label:"咬牙撐過去，能省則省", delta:{money:5, d:-6}}
+  ]}),
+
+EV({id:"lowbirth", stageMin:2,
+  title:"少子化的帳，攤在眼前",
+  desc:function(p){ return "出版市場年度報告出爐：讀者基數持續萎縮。"+p.name+"開會時被問「你有什麼對策」。"; },
+  choices:[
+    {label:"往國際版權／海外市場找出路", delta:{c:6, money:-4}},
+    {label:"深耕本地鐵粉，做小而美的路線", delta:{fame:5, d:3}}
+  ]}),
+
+EV({id:"grant_scandal", stageMin:2,
+  title:"標案風波",
+  desc:function(p){ return p.name+"所屬單位標下一筆政府文化補助案，結案報告卻被眼尖的網友抓到「差旅費」比「印製費」還高，話題瞬間炸開。"; },
+  choices:[
+    {label:"公開帳目、正面說明", delta:{fame:-4, d:6, money:-6}},
+    {label:"低調不回應，讓話題自然退燒", delta:{fame:-10, c:-4}}
+  ]}),
+
+EV({id:"foundation", stageMin:2,
+  title:"老闆的那個基金會",
+  desc:function(p){ return "小道消息傳開："+p.name+"的老闆同時掌控著一個文化基金會，補助案審核委員名單裡，一半的人跟老闆吃過飯。"; },
+  choices:[
+    {label:"裝作不知道，專心做自己的書", delta:{d:2, money:3}},
+    {label:"私下向朋友抱怨兩句，結果被截圖", delta:{fame:-6, c:-6}}
+  ]}),
+
+EV({id:"blurb_backfire", stageMin:1,
+  title:"邀請的推薦人，隔天就炎上",
+  desc:function(p){ return p.name+"辛苦邀來一位重量級推薦人掛名，新書上市前一晚，對方卻因為一則舊發言被起底炎上。"; },
+  choices:[
+    {label:"連夜撤掉推薦語、緊急改版", delta:{money:-8, d:-5}},
+    {label:"賭一把，維持原樣照常上市", delta:{fame:pick([-8,6]), c:-3}}
+  ]}),
+
+EV({id:"belt_typo", title:"書腰上的錯字",
+  desc:function(p){ return "首刷到貨當天，眼尖的讀者發現書腰上把書名印錯一個字，截圖迅速在社群流傳，配文是「這是哪招行銷？」"; },
+  choices:[
+    {label:"順勢自嘲，把錯字做成限量哏", delta:{fame:8, money:-2}},
+    {label:"緊急回收重印，全額自費", delta:{money:-14, d:-4}}
+  ]}),
+
+EV({id:"language_police", title:"讀者檢討你用「支語」",
+  desc:function(p){ return "新書文案裡一句「視頻」被讀者截圖公審，留言區吵成兩派，一派護航一派出征，"+p.name+"的通知欄瞬間爆炸。"; },
+  choices:[
+    {label:"發文致歉並修正用詞", delta:{fame:-2, d:-3}},
+    {label:"不理會，讓子彈飛一會兒", delta:{fame:pick([-6,3]), c:-2}}
+  ]}),
+
+EV({id:"merger", stageMin:3,
+  title:"產業傳出大型併購案",
+  desc:function(p){ return "兩間指標出版集團傳出合併消息，業界人心浮動，大家私下都在打聽誰會被資遣。"; },
+  choices:[
+    {label:"利用人脈打聽情報、超前部署", delta:{c:6, d:-3}},
+    {label:"專心把手上的事做好，靜觀其變", delta:{d:5}}
+  ]}),
+
+EV({id:"friend_kol", stageMin:2,
+  title:"同業好友辭職開自媒體",
+  desc:function(p){ return "交情不錯的同業突然宣布離職，開了個「揭密出版業」的帳號，"+p.name+"被問要不要來當第一集嘉賓。"; },
+  choices:[
+    {label:"上，藉機累積個人聲量", delta:{fame:9, c:-3}},
+    {label:"婉拒，怕日後在業界難做人", delta:{c:4, fame:-1}}
+  ]}),
+
+/* ---------- author ---------- */
+EV({id:"hater", paths:["author"], title:"戰力與怨念都很強的黑粉",
+  desc:function(p){ return "一位帳號沒有大頭貼的讀者，開始逐字逐句挑"+p.name+"每一本書的錯，戰力驚人、怨念更驚人，甚至做了整理帖。"; },
+  choices:[
+    {label:"完全不看，專心寫下一本", delta:{d:6, a:2}},
+    {label:"忍不住回覆一句，戰火瞬間擴大", delta:{fame:5, d:-9, c:-3}}
+  ]}),
+
+EV({id:"veteran_diss", paths:["author"], stageMin:2, title:"資深大老公開開炮",
+  desc:function(p){ return "一位文壇資深大老在受訪時點名："+p.name+"「文字流暢，但那個不叫小說」。媒體樂得標題下得又大又聳動。"; },
+  choices:[
+    {label:"寫一篇長文正面回應、闡述創作理念", delta:{fame:10, d:-6}},
+    {label:"完全不回應，讓作品說話", delta:{d:4, fame:2}}
+  ]}),
+
+EV({id:"photo_rights", paths:["author"], title:"沒簽授權的那張照片",
+  desc:function(p){ return p.name+"在新書裡用了一張很有意境的網路照片當插圖，出版後才發現——沒有取得攝影師授權。"; },
+  choices:[
+    {label:"主動聯絡道歉、付費和解", delta:{money:-10, d:2}},
+    {label:"裝沒事，賭對方不會發現", delta:{fame:pick([-14,0]), money:pick([-20,0])}}
+  ]}),
+
+EV({id:"celeb_memoir", paths:["author"], stageMin:2, weight:0.6,
+  title:"一萬美金簽下的名人自傳",
+  desc:function(p){ return p.name+"力排眾議，砸下一萬美金預付金，簽下一位美國名人的自傳合作案。合約墨水未乾的隔天，對方就被爆出捲入一樁駭人聽聞的私人島嶼醜聞。"; },
+  choices:[
+    {label:"火速解約，認賠殺出", delta:{money:-30, d:-5}},
+    {label:"硬著頭皮繼續出，順勢改包裝成「爭議人物觀察」", delta:{fame:12, money:-6, c:-5}}
+  ]}),
+
+EV({id:"overseas_offer", paths:["author"], stageMin:2,
+  title:"一封來自歐洲小語種出版社的信",
+  desc:function(p){ return "一封措辭正式的信件寄到信箱：某歐洲小語種出版社，想談"+p.name+"作品的翻譯授權。"; },
+  choices:[
+    {label:"請經紀人／編輯協助，正式談版權", delta:{fame:10, money:6, c:4}},
+    {label:"自己土法煉鋼回信，怕搞砸細節", delta:{fame:4, d:-3}}
+  ]}),
+
+EV({id:"nobel_rumor", paths:["author"], stageMin:3, weight:0.5,
+  requires:function(p){ return p.stats.a>=65 && p.fame>=55; },
+  title:"一則不敢確認的傳言",
+  desc:function(p){ return "業界流傳一個說法："+p.name+"的作品，被某個國際文學獎的觀察名單提及。沒人敢確定是真是假，但電話開始變多。"; },
+  choices:[
+    {label:"低調不聲張，繼續寫", delta:{a:6, d:4}},
+    {label:"接受幾家媒體專訪，順勢曝光", delta:{fame:14, d:-4}}
+  ]}),
+
+EV({id:"adapt_offer", paths:["author"], stageMin:2,
+  title:"影視改編邀約",
+  desc:function(p){ return "一間製作公司主動接觸"+p.name+"，想談作品的影視改編授權，條件聽起來很誘人，也聽起來很像陷阱。"; },
+  choices:[
+    {label:"找律師仔細審約，慢慢談", delta:{money:8, d:-3, c:3}},
+    {label:"急著簽下，怕機會溜走", delta:{money:16, fame:6, d:-6}}
+  ]}),
+
+EV({id:"writers_block", paths:["author"], title:"江郎才盡的那個月",
+  desc:function(p){ return p.name+"盯著游標閃爍了三個星期，一個字都擠不出來，截稿日像倒數計時器一樣逼近。"; },
+  choices:[
+    {label:"放自己一週假，去外地走走", delta:{d:8, money:-4}},
+    {label:"硬逼自己坐在桌前，逼出來就是", delta:{a:4, d:-10}}
+  ]}),
+
+EV({id:"delay_penalty", paths:["author"], title:"違約金追殺令",
+  desc:function(p){ return "交稿一再延遲，出版社終於寄來存證信函，語氣客氣，附件是違約金試算表。"; },
+  choices:[
+    {label:"連夜熬稿，總算壓線交出", delta:{a:3, d:-9}},
+    {label:"認賠協商，延長交稿期", delta:{money:-12, d:2}}
+  ]}),
+
+EV({id:"plagiarism_doubt", paths:["author"], stageMin:2,
+  title:"抄襲爭議疑雲",
+  desc:function(p){ return "有人在社群指出"+p.name+"某段情節「跟某部作品高度相似」，附上並排截圖，留言區迅速分成兩派。"; },
+  choices:[
+    {label:"公開創作筆記、時間軸自清", delta:{d:-4, fame:pick([6,-6])}},
+    {label:"完全不回應，交給時間證明", delta:{d:-6, fame:-3}}
+  ]}),
+
+EV({id:"booksigning", paths:["author"],
+  title:"簽書會現場",
+  desc:function(p){ return "新書簽書會當天，"+p.name+"提早到場，緊張地看著空蕩蕩的座位一格一格被填滿——或不被填滿。"; },
+  choices:[
+    {label:"提前在社群發動員、催朋友來撐場", delta:{c:5, fame:3, d:-2}},
+    {label:"順其自然，不特別經營", delta:{fame:pick([5,-3])}}
+  ]}),
+
+EV({id:"fan_army", paths:["author"], stageMin:2,
+  title:"書友自發出征護航",
+  desc:function(p){ return "一群長期支持"+p.name+"的讀者，看到黑粉留言後自發組隊反擊，戰況激烈到上了同溫層熱門。"; },
+  choices:[
+    {label:"發文感謝，順勢安撫戰場", delta:{fame:6, c:4}},
+    {label:"樂觀其成，不介入", delta:{fame:3, d:2}}
+  ]}),
+
+/* ---------- editor ---------- */
+EV({id:"translator_ghost", paths:["editor"], title:"人間蒸發的譯者",
+  desc:function(p){ return "交稿死線前兩週，負責翻譯的譯者已讀不回，電話關機，信箱退件。"+p.name+"的行事曆開始長出白髮。"; },
+  choices:[
+    {label:"緊急找救火譯者，加價趕工", delta:{money:-14, d:-4}},
+    {label:"自己下海硬翻幾章撐過去", delta:{a:5, d:-9}}
+  ]}),
+
+EV({id:"new_talent", paths:["editor"], title:"挖到一位潛力新秀",
+  desc:function(p){ return p.name+"在文學獎入圍名單裡，發現一個文字很有靈氣的新人，立刻寫信約喝咖啡。"; },
+  choices:[
+    {label:"開出誠意十足的合作條件", delta:{money:-6, fame:6, c:5}},
+    {label:"先觀察市場反應再說", delta:{c:2}}
+  ]}),
+
+EV({id:"advance_overshoot", paths:["editor"], title:"手滑核准的預付版稅",
+  desc:function(p){ return "會議上"+p.name+"為了搶下一本書，衝動喊出一個超出預算的預付版稅數字，老闆的表情瞬間僵住。"; },
+  choices:[
+    {label:"回去仔細做財務模型自圓其說", delta:{b:6, d:-4}},
+    {label:"死撐這個決定，賭書會大賣", delta:{money:-16, fame:5}}
+  ]}),
+
+EV({id:"boss_pressure", paths:["editor"], stageMin:2, title:"主管的不合理要求",
+  desc:function(p){ return "主管要求"+p.name+"去「側面了解」某位作者的私生活八卦，理由是「公關風險評估」。"; },
+  choices:[
+    {label:"拒絕，這不是編輯該做的事", delta:{d:5, c:-3}},
+    {label:"敷衍應付、隨便交差", delta:{d:-5, money:2}}
+  ]}),
+
+EV({id:"factcheck_save", paths:["editor"], title:"驚險攔截的事實查核",
+  desc:function(p){ return "上機前最後校對，"+p.name+"發現書裡引用的一段歷史事件年份完全錯誤，若印出去可能被出征。"; },
+  choices:[
+    {label:"連夜協調作者改稿、延後上市", delta:{money:-5, d:-3, fame:4}},
+    {label:"時間來不及，先印再說之後勘誤", delta:{fame:pick([-8,2])}}
+  ]}),
+
+EV({id:"royalty_error", paths:["editor"], title:"版稅對帳單算錯了",
+  desc:function(p){ return "電子書平台的版稅對帳單出現離奇落差，作者寄來措辭嚴厲的信件要求"+p.name+"說清楚。"; },
+  choices:[
+    {label:"徹夜核對報表，找出系統錯誤", delta:{d:-6, c:3}},
+    {label:"先安撫作者，慢慢查", delta:{c:-2, d:-2}}
+  ]}),
+
+EV({id:"public_called_out", paths:["editor"], title:"被作者公開點名開嗆",
+  desc:function(p){ return "一位合作作者在社群上公開發文，指控"+p.name+"「不尊重創作」，底下瞬間湧入圍觀群眾。"; },
+  choices:[
+    {label:"私訊約對方好好談", delta:{c:3, d:-4}},
+    {label:"公開發聲明反駁", delta:{fame:-5, d:-6}}
+  ]}),
+
+EV({id:"layoffs", paths:["editor"], stageMin:2, title:"裁員潮",
+  desc:function(p){ return "公司宣布組織重整，"+p.name+"的部門被點名「效益檢討」，會議室的燈那天特別亮。"; },
+  choices:[
+    {label:"主動提出貢獻報告、爭取留下", delta:{d:-5, b:4}},
+    {label:"開始默默投履歷", delta:{c:3, d:-2}}
+  ]}),
+
+EV({id:"moonlight", paths:["editor"], stageMin:2, title:"偷偷接的外稿",
+  desc:function(p){ return p.name+"利用下班時間偷偷接了外面的接案編輯工作貼補家用，只希望別被老闆發現。"; },
+  choices:[
+    {label:"低調做，多賺一點是一點", delta:{money:8, d:-5}},
+    {label:"覺得風險太高，婉拒了", delta:{d:2}}
+  ]}),
+
+/* ---------- marketing ---------- */
+EV({id:"kol_leak", paths:["marketing"], title:"業配網紅偷渡私貨",
+  desc:function(p){ return p.name+"砸預算邀來的網紅業配，貼文卻夾帶對競品出版社的暗酸，留言區戰成一團。"; },
+  choices:[
+    {label:"立刻聯繫網紅下架修正", delta:{money:-6, d:-4}},
+    {label:"順勢炒話題，蹭聲量", delta:{fame:9, c:-3}}
+  ]}),
+
+EV({id:"visual_plagiarism", paths:["marketing"], title:"主視覺被抓包抄襲",
+  desc:function(p){ return "新書發表會前一天，有網友指出"+p.name+"團隊設計的主視覺，跟國外某海報「巧合地」相似。"; },
+  choices:[
+    {label:"連夜換掉視覺、公開致歉", delta:{money:-8, d:-4}},
+    {label:"辯稱純屬致敬，硬撐活動照辦", delta:{fame:pick([-10,3])}}
+  ]}),
+
+EV({id:"meme_viral", paths:["marketing"], title:"迷因帳號意外爆紅",
+  desc:function(p){ return p.name+"隨手做的一張書摘迷因圖，一夜之間被轉發上萬次，編輯部的電話被打爆。"; },
+  choices:[
+    {label:"趁勝追擊，加開限量周邊", delta:{money:10, fame:10, d:-3}},
+    {label:"保守應對，怕曇花一現後被檢視", delta:{fame:5, d:2}}
+  ]}),
+
+EV({id:"kol_greedy", paths:["marketing"], title:"獅子大開口的業配報價",
+  desc:function(p){ return "談了三週的合作網紅，臨時把報價翻了三倍，理由是「我現在漲粉很快」。"; },
+  choices:[
+    {label:"忍痛付錢，怕錯過宣傳期", delta:{money:-14, fame:6}},
+    {label:"直接放棄合作，另找對象", delta:{c:-2, money:2}}
+  ]}),
+
+EV({id:"rainy_presser", paths:["marketing"], title:"下著雨的記者會",
+  desc:function(p){ return "精心籌備三個月的記者會當天，外頭下著大雨，簽到簿上只有小貓兩三隻記者。"; },
+  choices:[
+    {label:"臨場應變，改成線上直播補救", delta:{c:4, money:-4}},
+    {label:"硬著頭皮照原計畫進行", delta:{fame:-3, d:-3}}
+  ]}),
+
+EV({id:"burnout_sm", paths:["marketing"], title:"連續爆肝三個月的小編",
+  desc:function(p){ return p.name+"連續三個月每天緊盯後台數據到半夜，某天手滑把負面留言誤發成官方發文，瞬間衝上熱搜。"; },
+  choices:[
+    {label:"迅速公關滅火、誠懇道歉", delta:{fame:-5, d:-6}},
+    {label:"直接請假，讓同事代打", delta:{d:6, fame:-8}}
+  ]}),
+
+EV({id:"ad_burn", paths:["marketing"], stageMin:2, title:"廣告投放燒錢事件",
+  desc:function(p){ return "數據顯示這波廣告投放的轉換率慘不忍睹，"+p.name+"看著燒掉的預算，主管的臉色比報表還難看。"; },
+  choices:[
+    {label:"即時喊停、重新調整受眾", delta:{money:-6, b:5}},
+    {label:"賭一把繼續燒到底", delta:{money:-16, fame:pick([8,0])}}
+  ]}),
+
+EV({id:"campaign_hit", paths:["marketing"], stageMin:2, title:"意外做出年度爆款企劃",
+  desc:function(p){ return p.name+"隨手發想的一個小企劃，被總編轉發後意外成為全年討論度最高的行銷案例。"; },
+  choices:[
+    {label:"整理成方法論，對外分享", delta:{fame:10, c:6}},
+    {label:"低調收下成果，繼續埋頭做事", delta:{fame:4, d:3}}
+  ]}),
+
+/* ---------- bookstore ---------- */
+EV({id:"indie_cry", paths:["store"], title:"隔壁書店老闆的抱怨大會",
+  desc:function(p){ return "巷口另一間獨立書店老闆約"+p.name+"喝酒，喝到一半突然紅了眼眶，哭訴「你們知道出版社在偷偷賺多少嗎，我們根本是義工」。"; },
+  choices:[
+    {label:"認真安慰，順便交換進貨情報", delta:{c:5, d:-2}},
+    {label:"苦笑帶過，各自回家算帳", delta:{d:2}}
+  ]}),
+
+EV({id:"rent_hike", paths:["store"], title:"房東調漲租金三成",
+  desc:function(p){ return "房東一通電話通知"+p.name+"，租約續簽要調漲三成，理由是「這一帶現在很夯」。"; },
+  choices:[
+    {label:"忍痛簽下，搬家成本更高", delta:{money:-14, d:-3}},
+    {label:"認真找新址，寧可搬遷", delta:{money:-8, c:3, d:-5}}
+  ]}),
+
+EV({id:"chain_next_door", paths:["store"], title:"隔壁開了連鎖書店",
+  desc:function(p){ return "一間連鎖書店大型分店，就這樣開在"+p.name+"店面斜對面，開幕當天大排長龍。"; },
+  choices:[
+    {label:"主打選書品味與策展差異化", delta:{a:6, fame:4}},
+    {label:"跟進打折促銷，硬拚價格戰", delta:{money:-10, fame:2}}
+  ]}),
+
+EV({id:"empty_talk", paths:["store"], title:"冷場的講座",
+  desc:function(p){ return "精心邀來的講者站上台，台下椅子卻只坐了店貓和"+p.name+"自己。"; },
+  choices:[
+    {label:"當作練習，事後檢討宣傳方式", delta:{b:4, d:-2}},
+    {label:"自我安慰：品質比人數重要", delta:{d:3}}
+  ]}),
+
+EV({id:"discount_war", paths:["store"], title:"電商折扣戰開打",
+  desc:function(p){ return "電商平台祭出全館 79 折，"+p.name+"店裡的定價書架前，讀者只是拍照比價後默默離開。"; },
+  choices:[
+    {label:"推出「只有這裡買得到」的選品策展", delta:{a:5, money:-4}},
+    {label:"苦撐硬拚，不跟不折", delta:{d:-6, money:-6}}
+  ]}),
+
+EV({id:"landmark", paths:["store"], stageMin:2, title:"意外爆紅的打卡地標",
+  desc:function(p){ return "一位旅遊部落客隨手拍的一張店內照片爆紅，"+p.name+"的店突然湧入大批只想拍照的觀光客。"; },
+  choices:[
+    {label:"順勢推出限定周邊、把流量變業績", delta:{money:12, fame:8, d:-3}},
+    {label:"婉拒商業化，保留書店的初心", delta:{fame:5, a:3}}
+  ]}),
+
+EV({id:"community_market", paths:["store"], title:"里長邀請合辦市集",
+  desc:function(p){ return "社區里長找上"+p.name+"，提議在店門口合辦小型市集，「順便幫忙帶點人氣」。"; },
+  choices:[
+    {label:"答應，多接觸在地居民", delta:{c:6, money:-2}},
+    {label:"婉拒，怕影響日常營運", delta:{d:2}}
+  ]}),
+
+EV({id:"flood", paths:["store"], title:"淹水的那個颱風夜",
+  desc:function(p){ return "一場豪雨讓店裡淹水，"+p.name+"半夜衝回店裡，看著泡水的書架，久久說不出話。"; },
+  choices:[
+    {label:"申請補助、盤點損失重新開張", delta:{money:-18, d:-6}},
+    {label:"自認倒楣，默默扛下所有損失", delta:{money:-24, d:-3}}
+  ]}),
+
+EV({id:"lowered_back", paths:["store"], weight:1.4,
+  requires:function(p){ return p.stats.d<28; },
+  title:"搬書閃到腰",
+  desc:function(p){ return p.name+"體力早就亮紅燈，這天彎腰搬一箱新書時，腰「啪」一聲，整間店只剩"+p.name+"倒抽一口氣的聲音。"; },
+  choices:[
+    {label:"去看醫生、乖乖休養", delta:{money:-6, d:6}},
+    {label:"貼個藥膏繼續撐，店不能關", delta:{d:-10, money:2}}
+  ]}),
+
+EV({id:"low_social", paths:["store"], weight:1.2,
+  requires:function(p){ return p.stats.c<20; },
+  title:"社交存款見底",
+  desc:function(p){ return "出版社業務又來訪，"+p.name+"因為前幾次應對太過冷淡，對方這次直接站在門口沒進來，隔著玻璃揮揮手就走了。"; },
+  choices:[
+    {label:"痛定思痛，練習寒暄與應對", delta:{c:8, d:-2}},
+    {label:"無所謂，反正書自己會賣", delta:{c:-4, fame:-2}}
+  ]}),
+
+EV({id:"showrooming", paths:["store"], title:"拍照比價的顧客",
+  desc:function(p){ return "一位顧客在架前翻了十分鐘，拿起手機對著書封拍照，轉頭跟朋友說「等等上網買就好，博客來有打折」，然後把書放回架上，空手走了。"; },
+  choices:[
+    {label:"上前搭話，聊聊這本書、順便推薦別的選書", delta:{c:4, a:3}},
+    {label:"什麼都不說，默默把書擺回原位", delta:{d:-3, fame:-1}}
+  ]}),
+
+EV({id:"no_creativity", paths:["store"], weight:1.3,
+  requires:function(p){ return p.stats.b<22; },
+  title:"「你這裡跟博客來有什麼不一樣？」",
+  desc:function(p){ return "一位熟客翻著跟連鎖通路一模一樣的暢銷排行榜書堆，直白地問"+p.name+"：「你賣的書跟博客來都一樣，我幹嘛要來你這邊消費？」"+p.name+"一時語塞。"; },
+  choices:[
+    {label:"痛定思痛，重新規劃選書與策展主題", delta:{b:9, money:-4}},
+    {label:"苦笑帶過，先把這句話記在心裡", delta:{d:-4, fame:-2}}
+  ]})
+];
+
+/* ---------- game state ---------- */
+var S = null;
+
+function newGame(name, pathKey, background){
+  var base = PATHS[pathKey].start;
+  var bg = BACKGROUNDS[background] || BACKGROUNDS.normal;
+  S = {
+    name:name||"無名氏",
+    path:pathKey,
+    background:background,
+    stats:{a:base.a, b:base.b, c:base.c, d:base.d, e:clamp(base.e+bg.e,0,100)},
+    money: base.money + bg.money,
+    fame: base.fame,
+    stageIdx:0,
+    turnInStage:0,
+    totalTurn:0,
+    age: STAGES[0].ageStart,
+    seed: seedInput || makeSeed(),
+    log:[],
+    flags:{},
+    usedEvents:{},
+    phase:"alloc", // alloc | event | result | stageend | ending
+    pendingEvent:null,
+    pendingChoice:null,
+    forcedEnding:null
+  };
+  setSeed(S.seed);
+  startAllocation();
+}
+
+var seedInput = "";
+
+/* ---------- turn engine ---------- */
+function poolForTurn(){
+  var stageNo = S.stageIdx+1;
+  return 5 + Math.floor(rng()*3) + (stageNo>=3?1:0); // 5-7(+1 late)
+}
+
+function startAllocation(){
+  S.phase="alloc";
+  S.allocPool = poolForTurn();
+  S.allocSpent = {a:0,b:0,c:0,d:0,e:0};
+  render();
+}
+
+function confirmAllocation(){
+  Object.keys(S.allocSpent).forEach(function(k){
+    S.stats[k] = clamp(S.stats[k]+S.allocSpent[k],0,100);
+  });
+  drawEvent();
+}
+
+function eligibleEvents(){
+  var stageNo = S.stageIdx+1;
+  return EVENTS.filter(function(ev){
+    if(ev.once && S.usedEvents[ev.id]) return false;
+    if(ev.paths.indexOf("all")===-1 && ev.paths.indexOf(S.path)===-1) return false;
+    if(stageNo<ev.stageMin || stageNo>ev.stageMax) return false;
+    if(ev.requires && !ev.requires(S)) return false;
+    return true;
+  });
+}
+
+function drawEvent(){
+  var pool = eligibleEvents();
+  if(pool.length===0){ afterEvent(); return; }
+  var totalW = pool.reduce(function(s,e){return s+e.weight;},0);
+  var r = rng()*totalW;
+  var chosen = pool[pool.length-1];
+  for(var i=0;i<pool.length;i++){ r-=pool[i].weight; if(r<=0){ chosen=pool[i]; break; } }
+  S.usedEvents[chosen.id]=true;
+  S.pendingEvent = chosen;
+  S.phase="event";
+  S.tickerLine = rng()<0.5 ? pick(TICKERS) : null;
+  render();
+}
+
+function resolveChoice(idx){
+  var ev = S.pendingEvent;
+  var choice = ev.choices[idx];
+  var delta = choice.delta;
+  var deltaList = fmtDelta(S, delta);
+  applyDelta(S, delta);
+  S.lastResult = {title:ev.title, choiceLabel:choice.label, deltaList:deltaList};
+  S.log.push({age:S.age, title:ev.title, choice:choice.label});
+  S.phase="result";
+  render();
+}
+
+function afterEvent(){
+  checkCrisis();
+  if(S.phase==="ending") return;
+  S.turnInStage++;
+  S.totalTurn++;
+  S.age++;
+  if(S.turnInStage>=STAGES[S.stageIdx].turns){
+    S.stageIdx++;
+    S.turnInStage=0;
+    if(S.stageIdx>=STAGES.length){ computeEnding(); return; }
+    S.phase="stageend";
+    render();
+    return;
+  }
+  startAllocation();
+}
+
+function bankruptThreshold(){
+  if(S.path==="store") return -(80 + S.stats.e*8);
+  return -260;
+}
+
+function checkCrisis(){
+  var thresh = bankruptThreshold();
+  if(S.money<=thresh && S.stats.d<=18){
+    S.forcedEnding = "crushed";
+    computeEnding();
+  }
+}
+
+function continueFromStageEnd(){
+  S.phase="alloc";
+  startAllocation();
+}
+
+/* ---------- allocator UI logic ---------- */
+function allocSpentTotal(){
+  return Object.keys(S.allocSpent).reduce(function(s,k){return s+S.allocSpent[k];},0);
+}
+function allocInc(k){
+  if(allocSpentTotal()>=S.allocPool) return;
+  S.allocSpent[k]++;
+  render();
+}
+function allocDec(k){
+  if(S.allocSpent[k]<=0) return;
+  S.allocSpent[k]--;
+  render();
+}
+
+/* ---------- endings ---------- */
+function computeEnding(){
+  var s=S.stats, path=S.path;
+  var out;
+  if(S.forcedEnding==="crushed" || (S.money<=bankruptThreshold())){
+    out = crushedEnding();
+  } else if(path==="author"){
+    out = authorEnding();
+  } else if(path==="editor"){
+    out = editorEnding();
+  } else if(path==="marketing"){
+    out = marketingEnding();
+  } else {
+    out = storeEnding();
+  }
+  S.ending = out;
+  S.phase="ending";
+  render();
+}
+
+function crushedEnding(){
+  var jobs=["超商大夜班店員","保險業務","外送員","房仲助理","客服中心","補習班班導"];
+  return {
+    tag:"bad",
+    title:"被現實擊垮",
+    text:S.name+"最終沒能撐過去。積欠的帳單、透支的體力，比任何一篇負評都更誠實地宣告了結局。"+
+      "離開出版業那天，"+S.name+"沒有告別式，只在社群發了一句「謝謝這幾年」。"+
+      "現在的"+S.name+"，是一名"+pick(jobs)+"——薪水準時入帳，這件事本身，就已經是一種奢侈。"
+  };
+}
+
+function authorEnding(){
+  var s=S.stats;
+  if(s.a>=82 && S.fame>=75 && s.e>=60){
+    return {tag:"great", title:"諾貝爾文學獎與國外授權",
+      text:S.name+"站上斯德哥爾摩的講台，手稿被譯成十七種語言。當年那個在截稿夜裡懷疑自己的無名作者，如今成了教科書上的一個章節。全世界的出版社，現在搶著回"+S.name+"的信。"};
+  }
+  if(s.a>=68 && S.fame>=60){
+    return {tag:"good", title:"國際版權與影視改編",
+      text:S.name+"的作品被翻譯到海外書市，也搬上了螢幕。走在路上偶爾會被讀者認出，"+S.name+"依然覺得不太真實，但銀行帳戶很誠實地相信了。"};
+  }
+  if(s.a>=55 && S.fame>=40){
+    return {tag:"good", title:"長銷型作家",
+      text:S.name+"沒有一戰成名，卻靠著一本接一本紮實的作品，成為書店平台上「這位作者的書都值得買」的那種存在。"};
+  }
+  if(S.money>=0 && s.a>=42){
+    return {tag:"neutral", title:"收支勉強打平的職業作家",
+      text:S.name+"還在寫，帳戶餘額總在及格邊緣徘徊。沒有得獎，沒有絕版，也沒有放棄——某種意義上，這就是這行最誠實的成功。"};
+  }
+  if(s.d<=25 || S.flags.gaveUp){
+    return {tag:"bad", title:"轉職：把故事留給自己",
+      text:S.name+"最終沒能靠寫作活下去，把最後一份書稿存進硬碟深處，去應徵了一份"+pick(["行銷企劃","出版社編輯","文案外包"])+"的工作。同事都不知道，他們的新同事曾經差一點成為作家。"};
+  }
+  return {tag:"neutral", title:"持續掙扎的兼職作家",
+    text:S.name+"白天上班，晚上寫作，作品散落在各個平台，讀者不多但很忠誠。這條路還沒結束，只是走得比想像中慢。"};
+}
+
+function editorEnding(){
+  var s=S.stats;
+  if(s.b>=80 && s.c>=68 && S.fame>=55){
+    return {tag:"great", title:"創辦獨立出版社的傳奇總編",
+      text:S.name+"離開大集團，用退休金加信用貸款開了自己的出版社。十年後，業界後輩提起"+S.name+"的名字時，語氣裡都帶著敬意。"};
+  }
+  if(s.b>=60 && s.c>=48){
+    return {tag:"good", title:"備受敬重的資深主編",
+      text:S.name+"手上經手過的作者名單，是很多新人編輯偷偷研究的教材。沒有大紅大紫，但整個編輯部都知道，出事第一個找的人是"+S.name+"。"};
+  }
+  if(s.d<=25){
+    return {tag:"bad", title:"過勞離場",
+      text:S.name+"在又一個熬夜核稿的凌晨，突然打開履歷網站。遞出辭呈那天，主管只問了一句「書趕得完嗎」，"+S.name+"沒有回答。"};
+  }
+  return {tag:"neutral", title:"持續耕耘的資深編輯",
+    text:S.name+"沒有成為誰的傳奇，但經手的每一本書，作者都記得他的仔細。這一行的成就感，往往就藏在書背折口那行小小的責編名字裡。"};
+}
+
+function marketingEnding(){
+  var s=S.stats;
+  if(s.b>=75 && s.c>=68 && S.fame>=70){
+    return {tag:"great", title:"業界傳奇操盤手",
+      text:S.name+"的名字成了行銷企劃課的案例，年輕行銷人視為典範。每次新書要衝銷量，同業第一句話都是「這案子能不能挖到"+S.name+"」。"};
+  }
+  if(s.b>=55 && s.c>=45){
+    return {tag:"good", title:"資深行銷經理",
+      text:S.name+"手上經手的企劃案有成有敗，但整體戰績讓公司離不開這個人。加薪單上的數字，是這些年熬夜換來的。"};
+  }
+  if(S.fame<=15 && S.flags.prDisaster){
+    return {tag:"bad", title:"黯然離職",
+      text:S.name+"因為一場處理不當的公關風暴，在會議室裡遞出辭呈。離開那天，同事送的卡片上寫著「辛苦了」，沒人多說什麼。"};
+  }
+  return {tag:"neutral", title:"平凡但踏實的行銷人",
+    text:S.name+"沒有大爆款，也沒有大災難，就這樣一檔接一檔地把案子做完。這份工作教會他最重要的事：預算永遠不夠，截止日永遠提前。"};
+}
+
+function storeEnding(){
+  var s=S.stats;
+  if(s.b>=68 && s.c>=65 && S.fame>=70){
+    return {tag:"great", title:"全國知名的獨立書店地標",
+      text:S.name+"的店成了外國媒體介紹「亞洲最美書店」名單上的常客。遊客專程來拍照，老讀者則專程來買書——"+S.name+"用品味守住了一整條街的靈魂。"};
+  }
+  if(s.a>=55 && S.money>=0){
+    return {tag:"good", title:"穩定經營的社區書店",
+      text:S.name+"的店不是打卡熱點，卻是附近居民下班會順路走進去的地方。租金依然壓力山大，但這間店，早就成了社區記憶的一部分。"};
+  }
+  if(s.d<=25){
+    return {tag:"bad", title:"腰傷退場",
+      text:S.name+"的腰終究還是沒撐住，醫生下了最後通牒。看著滿牆的書，"+S.name+"第一次認真考慮把店頂讓出去。"};
+  }
+  if(S.money<0 && S.money>bankruptThreshold()){
+    return {tag:"neutral", title:"苦撐著活下來的小書店",
+      text:S.name+"的店帳面上沒有一年是好看的，但總能在快撐不下去的時候，剛好有筆訂單、剛好有場活動，把店續了下去。"};
+  }
+  return {tag:"neutral", title:"持續守著一盞燈的書店老闆",
+    text:S.name+"的店不大，燈卻幾乎每晚都亮到最後。這一行沒有暴富的故事，只有一頁一頁翻過去的日子。"};
+}
+
+/* ---------- render ---------- */
+function el(html){ var d=document.createElement("div"); d.innerHTML=html; return d.firstElementChild; }
+function esc(s){ return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];}); }
+
+function statBarsHTML(){
+  var order = PATHS[S.path].order, labels=PATHS[S.path].labels;
+  var cells = order.map(function(k){
+    return '<div class="cell"><span class="k">'+labels[k]+'</span><span class="v">'+S.stats[k]+'</span>'+
+      '<div class="bar"><i style="width:'+S.stats[k]+'%"></i></div></div>';
+  }).join("");
+  cells += '<div class="cell money'+(S.money<0?' neg':'')+'"><span class="k">財力</span><span class="v">'+S.money+' 萬</span>'+
+    '<div class="bar"><i style="width:'+clamp(50+S.money/4,0,100)+'%"></i></div></div>';
+  cells += '<div class="cell"><span class="k">知名度</span><span class="v">'+S.fame+'</span>'+
+    '<div class="bar"><i style="width:'+S.fame+'%"></i></div></div>';
+  return '<div class="ledger">'+cells+'</div>';
+}
+
+function topline(){
+  var stage = STAGES[S.stageIdx];
+  return '<div class="topline"><span class="stage-pill">'+stage.label+' · 第 '+(S.turnInStage+1)+'/'+stage.turns+' 年</span>'+
+    '<span>'+S.age+' 歲 · '+PATHS[S.path].noun+' '+esc(S.name)+' · 種子 '+esc(S.seed)+'</span></div>';
+}
+
+function render(){
+  var app = document.getElementById("app");
+  if(!S){ app.innerHTML = renderStart(); bindStart(); return; }
+  if(S.phase==="alloc"){ app.innerHTML = topline()+statBarsHTML()+renderAlloc(); bindAlloc(); }
+  else if(S.phase==="event"){ app.innerHTML = topline()+statBarsHTML()+renderEvent(); bindEvent(); }
+  else if(S.phase==="result"){ app.innerHTML = topline()+statBarsHTML()+renderResult(); bindResult(); }
+  else if(S.phase==="stageend"){ app.innerHTML = renderStageEnd(); bindStageEnd(); }
+  else if(S.phase==="ending"){ app.innerHTML = renderEnding(); bindEnding(); }
+}
+
+/* start screen */
+function renderStart(){
+  var cards = Object.keys(PATHS).map(function(k){
+    var p = PATHS[k];
+    var statNames = p.order.map(function(o){return p.labels[o];}).join(" ／ ");
+    return '<div class="pathcard" data-path="'+k+'"><h3>'+p.label+'</h3><p>'+p.blurb+'</p><div class="stats">'+statNames+'</div></div>';
+  }).join("");
+  return '<div class="page">'+
+    '<h2 class="title">角色設定</h2>'+
+    '<div class="sub">Character Sheet</div>'+
+    '<label class="field"><span class="lbl">筆名 / 姓名</span><input type="text" id="nameInput" placeholder="例如：林小記" maxlength="12"></label>'+
+    '<label class="field"><span class="lbl">選擇路線</span></label>'+
+    '<div class="paths" id="pathPicker">'+cards+'</div>'+
+    '<div id="bgWrap"></div>'+
+    '<label class="field" style="margin-top:14px;"><span class="lbl">世界種子（同種子＋同選擇＝同人生）</span>'+
+      '<div style="display:flex; gap:8px;"><input type="text" id="seedInput" placeholder="留空則隨機" style="flex:1;">'+
+      '<button class="ghost" id="rerollSeed" type="button">換一個</button></div></label>'+
+    '<div class="actions"><button class="primary" id="startBtn">開始職涯 ▸ 新人期</button></div>'+
+    '</div>';
+}
+var startPath = null;
+function bgPickerHTML(){
+  if(startPath!=="store") return "";
+  var opts = Object.keys(BACKGROUNDS).map(function(k){
+    return '<label><input type="radio" name="bg" value="'+k+'" '+(k==="normal"?"checked":"")+'><span>'+BACKGROUNDS[k].label+'</span></label>';
+  }).join("");
+  return '<label class="field"><span class="lbl">家境（影響起始資金與資金上限）</span><div class="radiorow">'+opts+'</div></label>';
+}
+function bindStart(){
+  var picker = document.getElementById("pathPicker");
+  picker.addEventListener("click", function(e){
+    var card = e.target.closest(".pathcard");
+    if(!card) return;
+    startPath = card.getAttribute("data-path");
+    Array.prototype.forEach.call(picker.children, function(c){ c.classList.toggle("sel", c===card); });
+    document.getElementById("bgWrap").innerHTML = bgPickerHTML();
+  });
+  document.getElementById("rerollSeed").addEventListener("click", function(){
+    document.getElementById("seedInput").value = makeSeed();
+  });
+  document.getElementById("startBtn").addEventListener("click", function(){
+    var name = document.getElementById("nameInput").value.trim();
+    if(!startPath){ alert("請先選擇一條路線。"); return; }
+    seedInput = document.getElementById("seedInput").value.trim();
+    var bgEl = document.querySelector('input[name="bg"]:checked');
+    newGame(name, startPath, bgEl?bgEl.value:"normal");
+  });
+}
+
+/* allocation */
+function renderAlloc(){
+  var order = PATHS[S.path].order, labels=PATHS[S.path].labels;
+  var spent = allocSpentTotal();
+  var rows = order.map(function(k){
+    var val = S.stats[k]+S.allocSpent[k];
+    return '<div class="alloc-row"><span class="alloc-name">'+labels[k]+'</span>'+
+      '<div class="alloc-bar"><i style="width:'+clamp(val,0,100)+'%"></i></div>'+
+      '<div class="alloc-btns"><button data-dec="'+k+'" '+(S.allocSpent[k]<=0?"disabled":"")+'>−</button>'+
+      '<button data-inc="'+k+'" '+(spent>=S.allocPool?"disabled":"")+'>＋</button></div></div>';
+  }).join("");
+  return '<div class="page">'+
+    '<h2 class="title">今年的心力分配</h2>'+
+    '<div class="sub">Annual Allocation</div>'+
+    '<p>這一年，'+esc(S.name)+'能投入的心力有限，怎麼分配，決定接下來會遇上什麼。</p>'+
+    '<div class="pool">可分配點數：'+(S.allocPool-spent)+' / '+S.allocPool+'</div>'+
+    rows+
+    '<div class="actions"><button class="primary" id="confirmAlloc">確定分配，迎接這一年</button></div>'+
+    '</div>';
+}
+function bindAlloc(){
+  document.querySelectorAll("[data-inc]").forEach(function(b){ b.addEventListener("click", function(){ allocInc(b.getAttribute("data-inc")); }); });
+  document.querySelectorAll("[data-dec]").forEach(function(b){ b.addEventListener("click", function(){ allocDec(b.getAttribute("data-dec")); }); });
+  document.getElementById("confirmAlloc").addEventListener("click", confirmAllocation);
+}
+
+/* event */
+function renderEvent(){
+  var ev = S.pendingEvent;
+  var ticker = S.tickerLine ? '<div class="ticker"><b>快訊</b><span>'+esc(S.tickerLine)+'</span></div>' : "";
+  var choices = ev.choices.map(function(c,i){
+    return '<button class="choice" data-choice="'+i+'">'+esc(c.label)+'</button>';
+  }).join("");
+  return '<div class="page">'+
+    ticker+
+    '<h2 class="title">'+esc(ev.title)+'</h2>'+
+    '<div class="sub">Event</div>'+
+    '<p>'+esc(ev.desc(S))+'</p>'+
+    '<div class="choices">'+choices+'</div>'+
+    '</div>';
+}
+function bindEvent(){
+  document.querySelectorAll("[data-choice]").forEach(function(b){
+    b.addEventListener("click", function(){ resolveChoice(parseInt(b.getAttribute("data-choice"),10)); });
+  });
+}
+
+/* result */
+function renderResult(){
+  var r = S.lastResult;
+  var deltas = r.deltaList.map(function(d){
+    var cls = d.val>0?"pos":"neg";
+    var sign = d.val>0?"+":"";
+    return '<span class="'+cls+'">'+d.label+' '+sign+d.val+(d.unit||"")+'</span>';
+  }).join("");
+  return '<div class="page">'+
+    '<h2 class="title">'+esc(r.title)+'</h2>'+
+    '<div class="sub">Outcome</div>'+
+    '<div class="result">你選擇了：「'+esc(r.choiceLabel)+'」'+
+      '<div class="delta">'+(deltas||"（沒有明顯變化）")+'</div></div>'+
+    '<div class="actions"><button class="primary" id="nextBtn">繼續</button></div>'+
+    '</div>';
+}
+function bindResult(){
+  document.getElementById("nextBtn").addEventListener("click", afterEvent);
+}
+
+/* stage end */
+function renderStageEnd(){
+  var prevStage = STAGES[S.stageIdx-1];
+  var nextStage = STAGES[S.stageIdx];
+  return '<div class="page">'+
+    '<h2 class="title">'+prevStage.label+'結束</h2>'+
+    '<div class="sub">Chapter Break</div>'+
+    '<p>'+esc(S.name)+'的'+prevStage.label+'告一段落。接下來是<b>'+nextStage.label+'</b>——牌桌上的籌碼，會越堆越高，或越剩越少。</p>'+
+    '<div class="actions"><button class="primary" id="stageContinue">進入'+nextStage.label+'</button></div>'+
+    '</div>';
+}
+function bindStageEnd(){
+  document.getElementById("stageContinue").addEventListener("click", continueFromStageEnd);
+}
+
+/* ending */
+function renderEnding(){
+  var e = S.ending;
+  var historyLines = S.log.map(function(l){ return l.age+' 歲　'+esc(l.title)+'　→　'+esc(l.choice); }).join("<br>");
+  return '<div class="page">'+
+    '<span class="ending-tag '+e.tag+'">Ending</span>'+
+    '<h2 class="title">'+esc(e.title)+'</h2>'+
+    '<div class="sub">'+PATHS[S.path].noun+' '+esc(S.name)+' · 享年心境 '+S.age+' 歲 · 種子 '+esc(S.seed)+'</div>'+
+    '<p>'+e.text+'</p>'+
+    statBarsHTML()+
+    '<div class="sub" style="margin-top:6px;">生涯記事</div>'+
+    '<div class="history">'+(historyLines||"（平淡的一生，沒留下什麼紀錄）")+'</div>'+
+    '<div class="actions"><button class="primary" id="restartBtn">重新開始人生</button>'+
+    '<button class="ghost" id="sameSeedBtn">用同一顆種子再來一次</button></div>'+
+    '</div>';
+}
+function bindEnding(){
+  document.getElementById("restartBtn").addEventListener("click", function(){ S=null; seedInput=""; startPath=null; render(); });
+  document.getElementById("sameSeedBtn").addEventListener("click", function(){
+    var seed=S.seed, path=S.path, name=S.name, bg=S.background;
+    seedInput = seed;
+    newGame(name, path, bg);
+  });
+}
+
+render();
+})();
+</script>
