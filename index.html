@@ -342,10 +342,16 @@ function applyDelta(p, delta){
 }
 
 /* ---------- event pool ---------- */
-function EV(o){ o.weight=o.weight||1; o.paths=o.paths||["all"]; o.stageMin=o.stageMin||1; o.stageMax=o.stageMax||4; return o; }
+/* events are one-off by default (once a career sees them, they're used up) —
+   mark repeat:true for genuinely recurring, routine-life events */
+function EV(o){
+  o.weight=o.weight||1; o.paths=o.paths||["all"]; o.stageMin=o.stageMin||1; o.stageMax=o.stageMax||4;
+  if(o.once===undefined) o.once = !o.repeat;
+  return o;
+}
 
 var EVENTS = [
-EV({id:"health", title:"年度健檢通知單",
+EV({id:"health", repeat:true, title:"年度健檢通知單",
   desc:function(p){ return p.name+"收到健檢報告，醫生指著紅字說：「這些數字，出版業的人我看多了。」"; },
   choices:[
     {label:"乖乖排時間去做復健、規律運動", delta:{d:6, money:-3}},
@@ -485,14 +491,14 @@ EV({id:"adapt_offer", paths:["author"], stageMin:2,
     {label:"急著簽下，怕機會溜走", delta:{money:16, fame:6, d:-6}}
   ]}),
 
-EV({id:"writers_block", paths:["author"], title:"江郎才盡的那個月",
+EV({id:"writers_block", paths:["author"], repeat:true, title:"江郎才盡的那個月",
   desc:function(p){ return p.name+"盯著游標閃爍了三個星期，一個字都擠不出來，截稿日像倒數計時器一樣逼近。"; },
   choices:[
     {label:"放自己一週假，去外地走走", delta:{d:8, money:-4}},
     {label:"硬逼自己坐在桌前，逼出來就是", delta:{a:4, d:-10}}
   ]}),
 
-EV({id:"delay_penalty", paths:["author"], title:"違約金追殺令",
+EV({id:"delay_penalty", paths:["author"], repeat:true, title:"違約金追殺令",
   desc:function(p){ return "交稿一再延遲，出版社終於寄來存證信函，語氣客氣，附件是違約金試算表。"; },
   choices:[
     {label:"連夜熬稿，總算壓線交出", delta:{a:3, d:-9}},
@@ -507,7 +513,7 @@ EV({id:"plagiarism_doubt", paths:["author"], stageMin:2,
     {label:"完全不回應，交給時間證明", delta:{d:-6, fame:-3}}
   ]}),
 
-EV({id:"booksigning", paths:["author"],
+EV({id:"booksigning", paths:["author"], repeat:true,
   title:"簽書會現場",
   desc:function(p){ return "新書簽書會當天，"+p.name+"提早到場，緊張地看著空蕩蕩的座位一格一格被填滿——或不被填滿。"; },
   choices:[
@@ -545,7 +551,7 @@ EV({id:"advance_overshoot", paths:["editor"], title:"手滑核准的預付版稅
     {label:"死撐這個決定，賭書會大賣", delta:{money:-16, fame:5}}
   ]}),
 
-EV({id:"boss_pressure", paths:["editor"], stageMin:2, title:"主管的不合理要求",
+EV({id:"boss_pressure", paths:["editor"], repeat:true, stageMin:2, title:"主管的不合理要求",
   desc:function(p){ return "主管要求"+p.name+"去「側面了解」某位作者的私生活八卦，理由是「公關風險評估」。"; },
   choices:[
     {label:"拒絕，這不是編輯該做的事", delta:{d:5, c:-3}},
@@ -609,14 +615,14 @@ EV({id:"meme_viral", paths:["marketing"], title:"迷因帳號意外爆紅",
     {label:"保守應對，怕曇花一現後被檢視", delta:{fame:5, d:2}}
   ]}),
 
-EV({id:"kol_greedy", paths:["marketing"], title:"獅子大開口的業配報價",
+EV({id:"kol_greedy", paths:["marketing"], repeat:true, title:"獅子大開口的業配報價",
   desc:function(p){ return "談了三週的合作網紅，臨時把報價翻了三倍，理由是「我現在漲粉很快」。"; },
   choices:[
     {label:"忍痛付錢，怕錯過宣傳期", delta:{money:-14, fame:6}},
     {label:"直接放棄合作，另找對象", delta:{c:-2, money:2}}
   ]}),
 
-EV({id:"rainy_presser", paths:["marketing"], title:"下著雨的記者會",
+EV({id:"rainy_presser", paths:["marketing"], repeat:true, title:"下著雨的記者會",
   desc:function(p){ return "精心籌備三個月的記者會當天，外頭下著大雨，簽到簿上只有小貓兩三隻記者。"; },
   choices:[
     {label:"臨場應變，改成線上直播補救", delta:{c:4, money:-4}},
@@ -630,7 +636,7 @@ EV({id:"burnout_sm", paths:["marketing"], title:"連續爆肝三個月的小編"
     {label:"直接請假，讓同事代打", delta:{d:6, fame:-8}}
   ]}),
 
-EV({id:"ad_burn", paths:["marketing"], stageMin:2, title:"廣告投放燒錢事件",
+EV({id:"ad_burn", paths:["marketing"], repeat:true, stageMin:2, title:"廣告投放燒錢事件",
   desc:function(p){ return "數據顯示這波廣告投放的轉換率慘不忍睹，"+p.name+"看著燒掉的預算，主管的臉色比報表還難看。"; },
   choices:[
     {label:"即時喊停、重新調整受眾", delta:{money:-6, b:5}},
@@ -645,21 +651,21 @@ EV({id:"campaign_hit", paths:["marketing"], stageMin:2, title:"意外做出年�
   ]}),
 
 /* ---------- translator ---------- */
-EV({id:"mt_pressure", paths:["translator"], stageMin:2, title:"「潤一下機翻就好」",
+EV({id:"mt_pressure", paths:["translator"], repeat:true, stageMin:2, title:"「潤一下機翻就好」",
   desc:function(p){ return "編輯來信，語氣輕鬆：「這本不趕，先機翻過一輪，你潤稿就好，費用可以照舊喔（其實打七折）。」"; },
   choices:[
     {label:"拒絕，翻譯不是校對機器的殘骸", delta:{a:6, money:-4}},
     {label:"接受，先求案子別斷", delta:{money:8, d:-6}}
   ]}),
 
-EV({id:"editor_nag", paths:["translator"], title:"每天傳訊息問進度的編輯",
+EV({id:"editor_nag", paths:["translator"], repeat:true, title:"每天傳訊息問進度的編輯",
   desc:function(p){ return "編輯每天固定時間傳一句「翻得如何了呀」，"+p.name+"開始對那個訊息提示音產生生理反應。"; },
   choices:[
     {label:"誠實回報還差多少，附上時間表", delta:{d:3, c:2}},
     {label:"已讀不回，先裝死", delta:{d:-8, c:-4}}
   ]}),
 
-EV({id:"author_nitpick", paths:["translator"], stageMin:2, title:"原作者龜毛審稿",
+EV({id:"author_nitpick", paths:["translator"], repeat:true, stageMin:2, title:"原作者龜毛審稿",
   desc:function(p){ return "原文作者本人竟然懂中文，逐句對"+p.name+"的譯文提出「語氣不夠貼近原意」的修改意見，附件是一份密密麻麻的批註。"; },
   choices:[
     {label:"耐心逐條溝通、來回討論", delta:{b:6, d:-3}},
@@ -673,7 +679,7 @@ EV({id:"credit_missing", paths:["translator"], title:"版權頁沒印上你的�
     {label:"算了，反正譯者本來就是隱形人", delta:{d:-4}}
   ]}),
 
-EV({id:"overbooked", paths:["translator"], title:"三份稿子同時撞上死線",
+EV({id:"overbooked", paths:["translator"], repeat:true, title:"三份稿子同時撞上死線",
   desc:function(p){ return p.name+"當初為了不斷案子，把三本書的交稿日排在同一週，此刻正對著行事曆懷疑人生。"; },
   choices:[
     {label:"熬夜硬拚，全部準時交出", delta:{a:4, d:-12}},
@@ -696,7 +702,7 @@ EV({id:"translation_award", paths:["translator"], stageMin:2, weight:0.7,
     {label:"低調不去，怕最後沒得獎很尷尬", delta:{fame:3}}
   ]}),
 
-EV({id:"vanish_temptation", paths:["translator"], weight:1.2,
+EV({id:"vanish_temptation", paths:["translator"], weight:1.2, repeat:true,
   requires:function(p){ return p.stats.d<28; },
   title:"想消失三天的念頭",
   desc:function(p){ return p.name+"盯著還剩三分之二沒譯完的稿子，第一次認真理解那些「人間蒸發」的前輩譯者——原來不是不負責任，是真的撐不住了。"; },
@@ -705,7 +711,7 @@ EV({id:"vanish_temptation", paths:["translator"], weight:1.2,
     {label:"手機關機，先躲三天再說", delta:{money:-10, c:-10}}
   ]}),
 
-EV({id:"rate_haggle", paths:["translator"], title:"十年沒漲過的翻譯費",
+EV({id:"rate_haggle", paths:["translator"], repeat:true, title:"十年沒漲過的翻譯費",
   desc:function(p){ return "出版社開出的千字翻譯費，"+p.name+"一算，居然跟十年前學生時代接的案子一樣。"; },
   choices:[
     {label:"據理力爭，爭取合理費率", delta:{money:6, c:-3}},
@@ -713,7 +719,7 @@ EV({id:"rate_haggle", paths:["translator"], title:"十年沒漲過的翻譯費",
   ]}),
 
 /* ---------- bookstore ---------- */
-EV({id:"indie_cry", paths:["store"], title:"隔壁書店老闆的抱怨大會",
+EV({id:"indie_cry", paths:["store"], repeat:true, title:"隔壁書店老闆的抱怨大會",
   desc:function(p){ return "巷口另一間獨立書店老闆約"+p.name+"喝酒，喝到一半突然紅了眼眶，哭訴「你們知道出版社在偷偷賺多少嗎，我們根本是義工」。"; },
   choices:[
     {label:"認真安慰，順便交換進貨情報", delta:{c:5, d:-2}},
@@ -734,14 +740,14 @@ EV({id:"chain_next_door", paths:["store"], title:"隔壁開了連鎖書店",
     {label:"跟進打折促銷，硬拚價格戰", delta:{money:-10, fame:2}}
   ]}),
 
-EV({id:"empty_talk", paths:["store"], title:"冷場的講座",
+EV({id:"empty_talk", paths:["store"], repeat:true, title:"冷場的講座",
   desc:function(p){ return "精心邀來的講者站上台，台下椅子卻只坐了店貓和"+p.name+"自己。"; },
   choices:[
     {label:"當作練習，事後檢討宣傳方式", delta:{b:4, d:-2}},
     {label:"自我安慰：品質比人數重要", delta:{d:3}}
   ]}),
 
-EV({id:"discount_war", paths:["store"], title:"電商折扣戰開打",
+EV({id:"discount_war", paths:["store"], repeat:true, title:"電商折扣戰開打",
   desc:function(p){ return "電商平台祭出全館 79 折，"+p.name+"店裡的定價書架前，讀者只是拍照比價後默默離開。"; },
   choices:[
     {label:"推出「只有這裡買得到」的選品策展", delta:{a:5, money:-4}},
@@ -755,7 +761,7 @@ EV({id:"landmark", paths:["store"], stageMin:2, title:"意外爆紅的打卡地�
     {label:"婉拒商業化，保留書店的初心", delta:{fame:5, a:3}}
   ]}),
 
-EV({id:"community_market", paths:["store"], title:"里長邀請合辦市集",
+EV({id:"community_market", paths:["store"], repeat:true, title:"里長邀請合辦市集",
   desc:function(p){ return "社區里長找上"+p.name+"，提議在店門口合辦小型市集，「順便幫忙帶點人氣」。"; },
   choices:[
     {label:"答應，多接觸在地居民", delta:{c:6, money:-2}},
@@ -769,7 +775,7 @@ EV({id:"flood", paths:["store"], title:"淹水的那個颱風夜",
     {label:"自認倒楣，默默扛下所有損失", delta:{money:-24, d:-3}}
   ]}),
 
-EV({id:"lowered_back", paths:["store"], weight:1.4,
+EV({id:"lowered_back", paths:["store"], weight:1.4, repeat:true,
   requires:function(p){ return p.stats.d<28; },
   title:"搬書閃到腰",
   desc:function(p){ return p.name+"體力早就亮紅燈，這天彎腰搬一箱新書時，腰「啪」一聲，整間店只剩"+p.name+"倒抽一口氣的聲音。"; },
@@ -778,7 +784,7 @@ EV({id:"lowered_back", paths:["store"], weight:1.4,
     {label:"貼個藥膏繼續撐，店不能關", delta:{d:-10, money:2}}
   ]}),
 
-EV({id:"low_social", paths:["store"], weight:1.2,
+EV({id:"low_social", paths:["store"], weight:1.2, repeat:true,
   requires:function(p){ return p.stats.c<20; },
   title:"社交存款見底",
   desc:function(p){ return "出版社業務又來訪，"+p.name+"因為前幾次應對太過冷淡，對方這次直接站在門口沒進來，隔著玻璃揮揮手就走了。"; },
@@ -787,20 +793,117 @@ EV({id:"low_social", paths:["store"], weight:1.2,
     {label:"無所謂，反正書自己會賣", delta:{c:-4, fame:-2}}
   ]}),
 
-EV({id:"showrooming", paths:["store"], title:"拍照比價的顧客",
+EV({id:"showrooming", paths:["store"], repeat:true, title:"拍照比價的顧客",
   desc:function(p){ return "一位顧客在架前翻了十分鐘，拿起手機對著書封拍照，轉頭跟朋友說「等等上網買就好，博客來有打折」，然後把書放回架上，空手走了。"; },
   choices:[
     {label:"上前搭話，聊聊這本書、順便推薦別的選書", delta:{c:4, a:3}},
     {label:"什麼都不說，默默把書擺回原位", delta:{d:-3, fame:-1}}
   ]}),
 
-EV({id:"no_creativity", paths:["store"], weight:1.3,
+EV({id:"no_creativity", paths:["store"], weight:1.3, repeat:true,
   requires:function(p){ return p.stats.b<22; },
   title:"「你這裡跟博客來有什麼不一樣？」",
   desc:function(p){ return "一位熟客翻著跟連鎖通路一模一樣的暢銷排行榜書堆，直白地問"+p.name+"：「你賣的書跟博客來都一樣，我幹嘛要來你這邊消費？」"+p.name+"一時語塞。"; },
   choices:[
     {label:"痛定思痛，重新規劃選書與策展主題", delta:{b:9, money:-4}},
     {label:"苦笑帶過，先把這句話記在心裡", delta:{d:-4, fame:-2}}
+  ]}),
+
+/* ---------- extra depth ---------- */
+EV({id:"salary_freeze", repeat:true,
+  title:"今年，加薪這件事又沒了下文",
+  desc:function(p){ return "年度考核會議上，主管一句「今年產業環境不好」，就把加薪這個話題輕輕帶過。"+p.name+"看著同樣的數字連續第三年沒動。"; },
+  choices:[
+    {label:"據理力爭，至少要個說法", delta:{c:-2, money:4}},
+    {label:"認了，反正吵也沒用", delta:{d:-4}}
+  ]}),
+
+EV({id:"office_gossip", repeat:true,
+  title:"尾牙上的耳語",
+  desc:function(p){ return "尾牙散場後的續攤場合，酒過三巡，"+p.name+"聽到不少業界八卦——誰家又要倒了、誰又跳槽去對家，真真假假難以分辨。"; },
+  choices:[
+    {label:"認真記下來，人脈就是這樣養成的", delta:{c:5, d:-2}},
+    {label:"聽聽就好，早點回家休息", delta:{d:3}}
+  ]}),
+
+EV({id:"ghostwriting_offer", paths:["author"], stageMin:2,
+  title:"一份不能掛名的代筆邀約",
+  desc:function(p){ return "一位企業家想找"+p.name+"代筆寫自傳，價碼優渥，唯一條件是：封面只能印企業家的名字。"; },
+  choices:[
+    {label:"接下，先解決現實問題", delta:{money:20, fame:-3, d:-4}},
+    {label:"婉拒，這不是"+p.name+"想留下的名字", delta:{d:3, a:2}}
+  ]}),
+
+EV({id:"content_farm_beef", paths:["author"], stageMin:1,
+  title:"讀書會被抓包內容農場化",
+  desc:function(p){ return p.name+"經營的線上讀書會，被眼尖網友發現大量貼文其實是農場文章改寫，"+p.name+"這才知道小編偷懶抄了捷徑。"; },
+  choices:[
+    {label:"公開切割、換掉小編", delta:{fame:-4, money:-3}},
+    {label:"低調處理，內部警告就好", delta:{fame:-6, c:-2}}
+  ]}),
+
+EV({id:"author_poached", paths:["editor"], stageMin:2,
+  title:"心愛的作者被挖角",
+  desc:function(p){ return p.name+"一手栽培多年的作者，被對家出版社用高額預付金挖走，連招呼都沒打一聲。"; },
+  choices:[
+    {label:"打電話關心，體面道別", delta:{c:4, d:-3}},
+    {label:"心裡記一筆帳，從此不再多說", delta:{d:-5, fame:2}}
+  ]}),
+
+EV({id:"budget_cut", paths:["editor"], repeat:true, stageMin:2,
+  title:"選書預算被砍半",
+  desc:function(p){ return "年度會議上，"+p.name+"的選書預算被無預警砍半，理由是「先撐過這一季再說」。"; },
+  choices:[
+    {label:"改找中小型、風險較低的案子", delta:{b:4, fame:-2}},
+    {label:"硬是保留一本理想中的書", delta:{money:-6, d:-3}}
+  ]}),
+
+EV({id:"boycott_adjacent", paths:["marketing"], stageMin:2,
+  title:"合作網紅被連坐抵制",
+  desc:function(p){ return p.name+"主打的行銷案，合作網紅被爆出跟另一樁醜聞有牽連，新書還沒上市就被讀者要求「連坐抵制」。"; },
+  choices:[
+    {label:"緊急切割、公開撤下合作內容", delta:{money:-10, fame:-4}},
+    {label:"觀望，賭風波很快過去", delta:{fame:pick([-12,2])}}
+  ]}),
+
+EV({id:"algorithm_change", paths:["marketing"], repeat:true, stageMin:2,
+  title:"演算法一夜大改",
+  desc:function(p){ return "社群平台一夜之間改了演算法，"+p.name+"上一檔還好好的貼文觸及率，這檔直接腰斬。"; },
+  choices:[
+    {label:"重新研究打法，砸時間測試", delta:{b:5, d:-3}},
+    {label:"加碼買廣告，用錢換觸及", delta:{money:-8, fame:3}}
+  ]}),
+
+EV({id:"co_translator_conflict", paths:["translator"], stageMin:2,
+  title:"跟共譯者吵起來了",
+  desc:function(p){ return p.name+"跟共同翻譯這本書的夥伴，為了譯名風格該統一成哪一派，在訊息群組裡吵得不可開交。"; },
+  choices:[
+    {label:"提出折衷方案，各退一步", delta:{c:4, d:-3}},
+    {label:"堅持己見，寧可鬧僵也不將就", delta:{a:3, c:-6}}
+  ]}),
+
+EV({id:"publisher_ghosts", paths:["translator"], stageMin:2,
+  title:"出版社簽約後消失了",
+  desc:function(p){ return p.name+"交稿三個月後，尾款遲遲沒進帳，聯絡窗口的信箱開始退信，公司電話也打不通——出版社比稿子還先「殺青」。"; },
+  choices:[
+    {label:"提告或申訴，能爭一點是一點", delta:{money:4, d:-6}},
+    {label:"認賠，把力氣留給下一份案子", delta:{money:-10, d:-2}}
+  ]}),
+
+EV({id:"landlord_sale", paths:["store"], stageMin:2,
+  title:"房東要把整棟樓賣掉",
+  desc:function(p){ return "房東通知"+p.name+"：整棟樓要出售，新屋主的計畫還不確定，租約能不能延續也是未知數。"; },
+  choices:[
+    {label:"提早開始物色備案店面", delta:{money:-4, c:3}},
+    {label:"賭一把，先觀望新屋主的態度", delta:{d:-4}}
+  ]}),
+
+EV({id:"supplier_shortage", paths:["store"], repeat:true,
+  title:"熱門新書被大通路吃光",
+  desc:function(p){ return "這期最熱門的新書，經銷商第一批貨幾乎全給了大型連鎖通路，"+p.name+"只分到零星幾本，開賣當天就被讀者掃空。"; },
+  choices:[
+    {label:"多囤些冷門好書，做出差異化", delta:{a:4, money:-3}},
+    {label:"據理力爭，跟經銷商談進貨量", delta:{c:-2, money:2}}
   ]})
 ];
 var EVENTS_BY_ID = {};
@@ -854,7 +957,8 @@ function newGame(name, pathKey, background){
     eventsThisYear:0,
     phase:"alloc",
     pendingEventId:null,
-    forcedEnding:null
+    forcedEnding:null,
+    lowGritStreak:0
   };
   setSeed(S.seed);
   startYear();
@@ -871,6 +975,12 @@ function startYear(){
   S.eventsThisYear=0;
   S.allocPool = poolForYear();
   S.allocSpent = {a:0,b:0,c:0,d:0,e:0};
+  if(S.money < -20){
+    var interest = Math.max(2, Math.round(Math.abs(S.money)*0.05));
+    S.money -= interest;
+    S.entries.push('<div class="ticker"><b>債務</b><span>信用卡循環利息又扣了 '+interest+' 萬，帳戶餘額持續探底。</span></div>');
+  }
+  if(checkDebtCrisis()) return;
   render();
 }
 
@@ -946,13 +1056,13 @@ function resolveChoice(idx){
 
 function continueAfterEvent(){
   S.eventsThisYear++;
-  checkCrisis();
-  if(S.phase==="ending") return;
+  if(checkDebtCrisis()) return;
   if(S.eventsThisYear<2){ drawEvent(); return; }
   afterYear();
 }
 
 function afterYear(){
+  if(checkBurnoutCrisis()) return;
   S.turnInStage++;
   S.age++;
   if(S.turnInStage>=STAGES[S.stageIdx].turns){
@@ -970,16 +1080,28 @@ function afterYear(){
 }
 
 function bankruptThreshold(){
-  if(S.path==="store") return -(80 + S.stats.e*8);
-  return -260;
+  if(S.path==="store") return -(60 + S.stats.e*6);
+  return -130;
 }
 
-function checkCrisis(){
-  var thresh = bankruptThreshold();
-  if(S.money<=thresh && S.stats.d<=18){
+function checkDebtCrisis(){
+  if(S.money<=bankruptThreshold()){
     S.forcedEnding = "crushed";
     computeEnding();
+    return true;
   }
+  return false;
+}
+
+function checkBurnoutCrisis(){
+  if(S.stats.d<=20){ S.lowGritStreak = (S.lowGritStreak||0)+1; }
+  else{ S.lowGritStreak = 0; }
+  if(S.lowGritStreak>=3){
+    S.forcedEnding = "burnout";
+    computeEnding();
+    return true;
+  }
+  return false;
 }
 
 function continueFromStageEnd(){ startYear(); }
@@ -1000,16 +1122,29 @@ function allocDec(k){
 }
 
 /* ---------- endings ---------- */
+function debtNote(){
+  return pick([
+    "唯一沒有寫進履歷的，是那筆一直沒打平的負債。",
+    "銀行對帳單上的數字，始終沒有這份資歷這麼好看。",
+    "如果把這些年的赤字攤開來看，這份「還算成功」的資歷，其實是精算後的險勝。",
+    "沒有人在履歷上寫負債金額，但"+S.name+"自己心裡有數，這幾年是怎麼撐過來的。"
+  ]);
+}
+
 function computeEnding(){
   var path=S.path;
   var out;
-  if(S.forcedEnding==="crushed" || (S.money<=bankruptThreshold())){
-    out = crushedEnding();
+  var isCrisis = false;
+  if(S.forcedEnding==="crushed" || S.money<=bankruptThreshold()){
+    out = crushedEnding(); isCrisis = true;
+  } else if(S.forcedEnding==="burnout"){
+    out = burnoutEnding(); isCrisis = true;
   } else if(path==="author"){ out = authorEnding(); }
   else if(path==="editor"){ out = editorEnding(); }
   else if(path==="marketing"){ out = marketingEnding(); }
   else if(path==="translator"){ out = translatorEnding(); }
   else { out = storeEnding(); }
+  if(!isCrisis && S.money<-15){ out.text += " "+debtNote(); }
   S.ending = out;
   S.phase="ending";
   render(true);
@@ -1019,9 +1154,23 @@ function crushedEnding(){
   var jobs=["超商大夜班店員","保險業務","外送員","房仲助理","客服中心","補習班班導"];
   return {
     tag:"bad", title:"被現實擊垮",
-    text:S.name+"最終沒能撐過去。積欠的帳單、透支的體力，比任何一篇負評都更誠實地宣告了結局。"+
+    text:S.name+"最終沒能撐過去。積欠的帳單比任何一篇負評都更誠實地宣告了結局。"+
       "離開出版業那天，"+S.name+"沒有告別式，只在社群發了一句「謝謝這幾年」。"+
       "現在的"+S.name+"，是一名"+pick(jobs)+"——薪水準時入帳，這件事本身，就已經是一種奢侈。"
+  };
+}
+
+function burnoutEnding(){
+  var lines = {
+    author:S.name+"在又一次熬夜趕稿後，直接被家人送急診。醫生只說了一句：「你的身體已經不聽你的了。」躺在病床上，"+S.name+"第一次認真想，這些年是不是把命都寫進了稿子裡。",
+    editor:S.name+"在核稿到一半時，直接昏倒在辦公桌前。醒來時人在醫院，主管傳來訊息：「好好休息，書不會跑掉的」——這句話"+S.name+"覺得晚了十年。",
+    marketing:S.name+"在又一場記者會前夕，被同事發現倒在會議室地板上。診斷書上寫著「過度勞累」，比任何一份行銷企劃書都誠實。",
+    translator:S.name+"在趕死線的凌晨四點，發現自己已經盯著同一句話看了十分鐘卻讀不進去。掛號那天，醫生的建議只有四個字：「先停下來」。",
+    store:S.name+"某天開店前，在後巷直接暈倒，被熟客發現送醫。醒來後，"+S.name+"看著病床天花板，第一次覺得那盞店裡從不熄的燈，或許該熄一下了。"
+  };
+  return {
+    tag:"bad", title:"過勞倒下",
+    text:(lines[S.path]||lines.editor)+" 這一行沒有工傷保險能填補的，是被熬乾的那部分自己。"
   };
 }
 
