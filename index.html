@@ -474,7 +474,7 @@ function fmtDelta(p, delta){
 function applyDelta(p, delta){
   ["a","b","c","d","e"].forEach(function(k){
     if(!delta[k]) return;
-    var lo = (k==="d" && p.traits && p.traits.battleScarred) ? 15 : 0;
+    var lo = (k==="d" && p.traits && p.traits.battleScarred) ? 16 : 0;
     p.stats[k]=clamp(p.stats[k]+delta[k], lo, 100);
   });
   if(delta.money){
@@ -1473,6 +1473,7 @@ function newGame(name, pathKey, background){
     log:[],
     flags:{},
     usedEvents:{},
+    eventSeenCount:{},
     eventsThisYear:0,
     phase:"alloc",
     pendingEventId:null,
@@ -1539,14 +1540,22 @@ function eligibleEvents(){
   });
 }
 
+/* repeat 事件抽中 2 次後權重大幅衰減，避免同一段 stale() 三段變文在一輪內被逐字重讀好幾次 */
+function effectiveWeight(ev){
+  var seen = (S.eventSeenCount && S.eventSeenCount[ev.id]) || 0;
+  if(seen>=3) return ev.weight*0.1;
+  if(seen>=2) return ev.weight*0.4;
+  return ev.weight;
+}
 function drawEvent(){
   var pool = eligibleEvents();
   if(pool.length===0){ continueAfterEvent(); return; }
-  var totalW = pool.reduce(function(s,e){return s+e.weight;},0);
+  var totalW = pool.reduce(function(s,e){return s+effectiveWeight(e);},0);
   var r = rng()*totalW;
   var chosen = pool[pool.length-1];
-  for(var i=0;i<pool.length;i++){ r-=pool[i].weight; if(r<=0){ chosen=pool[i]; break; } }
+  for(var i=0;i<pool.length;i++){ r-=effectiveWeight(pool[i]); if(r<=0){ chosen=pool[i]; break; } }
   S.usedEvents[chosen.id]=true;
+  S.eventSeenCount[chosen.id] = (S.eventSeenCount[chosen.id]||0)+1;
   S.pendingEventId = chosen.id;
   S.phase="event";
   if(rng()<0.4){
@@ -1767,7 +1776,7 @@ var TRAIT_DEFS = {
   pennyPincher:{ name:"精打細算",
     desc:"新人期挺過來時帳戶從沒見紅，這份謹慎成了本能——往後任何虧錢的決定，虧損永久打八折。" },
   battleScarred:{ name:"江湖百鍊",
-    desc:"你曾經瀕臨崩潰邊緣，卻硬是撐了回來。從此你的底線比別人更深——關鍵能力值永遠不會低於 15。" }
+    desc:"你曾經瀕臨崩潰邊緣，卻硬是撐了回來。從此你的底線比別人更深——關鍵能力值永遠不會低於 16，過勞的門檻再也碰不到。" }
 };
 function unlockTrait(key){
   if(S.traits[key]) return;
@@ -1835,6 +1844,10 @@ function styleNote(){
   if(s-b>=5) return " 回頭看這些年的選擇，"+S.name+"走的始終是穩紮穩打的路——不是最快的那條，但很少讓自己陷入絕境。";
   return "";
 }
+function marriedNote(){
+  if(!S.flags.married) return "";
+  return " 至少回家的時候，還有一盞燈是為"+S.name+"留的。";
+}
 
 function computeEnding(){
   var path=S.path;
@@ -1853,6 +1866,7 @@ function computeEnding(){
     out.text += styleNote();
     if(S.money<-15) out.text += " "+debtNote();
   }
+  out.text += marriedNote();
   S.ending = out;
   S.ending.tags = computeTags();
   S.ending.traits = Object.keys(S.traits).filter(function(k){ return S.traits[k]; }).map(function(k){ return TRAIT_DEFS[k]; });
@@ -1912,6 +1926,22 @@ function authorEnding(){
 
 function editorEnding(){
   var s=S.stats;
+  if(S.flags.foundedPress){
+    if(s.b>=68 && s.c>=58 && S.fame>=42){
+      return {tag:"great", title:"創辦獨立出版社的傳奇總編",
+        text:S.company+"從一人工作室，一路做成業界後輩私下研究的案例。"+S.name+"當年拿退休金加信用貸款賭下去的那一步，如今看來是整個生涯最正確的決定。"};
+    }
+    if(s.b>=60 && s.c>=48){
+      return {tag:"good", title:"站穩腳步的獨立出版社",
+        text:S.company+"這幾年慢慢做出了口碑，"+S.name+"不再是唯一一個扛事的人，終於敢接一些當初不敢碰的大案子。"};
+    }
+    if(s.d<=25){
+      return {tag:"bad", title:"獨自撐垮的工作室",
+        text:S.company+"開了幾年，"+S.name+"一直是唯一一個扛所有事的人。某天算了算帳，發現這間工作室從沒真的養活過自己，只是換了個方式繼續熬夜。"};
+    }
+    return {tag:"neutral", title:"還在硬撐的獨立出版社",
+      text:S.company+"開了好幾年，帳面始終沒有真的寬裕過，"+S.name+"還在硬撐，但至少書架上的每一本，都是自己選的書。"};
+  }
   if(s.b>=68 && s.c>=58 && S.fame>=42){
     return {tag:"great", title:"創辦獨立出版社的傳奇總編",
       text:S.name+"離開大集團，用退休金加信用貸款開了自己的出版社。十年後，業界後輩提起"+S.name+"的名字時，語氣裡都帶著敬意。"};
@@ -2040,7 +2070,7 @@ function statBarsHTML(){
 function lampsHTML(){
   return '<div class="lamps">'+BEAT_LABELS.map(function(label,i){
     var cls = "lamp";
-    if(i<S.eventsThisYear || (i===0 && S.phase!=="alloc")) cls+=" done";
+    if((i>0 && i<=S.eventsThisYear) || (i===0 && S.phase!=="alloc")) cls+=" done";
     if((i===0 && S.phase==="alloc") || (i===S.eventsThisYear+1 && (S.phase==="event"||S.phase==="post"))) cls+=" now";
     return '<span class="'+cls+'">'+label+'</span>';
   }).join("")+'</div>';
@@ -2138,6 +2168,25 @@ function renderAllocFooter(){
 
 /* start screen */
 var showSeedField = false;
+function seedBlockHTML(){
+  return showSeedField
+    ? '<label class="field"><span class="lbl">世界種子（同種子＋同選擇＝同人生）</span>'+
+      '<div style="display:flex; gap:8px;"><input type="text" id="seedInput" placeholder="留空則隨機" style="flex:1;">'+
+      '<button class="ghost" id="rerollSeed" type="button">換一個</button></div></label>'
+    : '<button class="ghost" id="seedToggle" type="button" style="margin-bottom:14px;">進階：自訂世界種子</button>';
+}
+function bindSeedArea(){
+  var rerollBtn = document.getElementById("rerollSeed");
+  if(rerollBtn) rerollBtn.addEventListener("click", function(){
+    document.getElementById("seedInput").value = makeSeed();
+  });
+  var seedToggle = document.getElementById("seedToggle");
+  if(seedToggle) seedToggle.addEventListener("click", function(){
+    showSeedField = true;
+    document.getElementById("seedArea").innerHTML = seedBlockHTML();
+    bindSeedArea();
+  });
+}
 function renderStart(){
   var cards = Object.keys(PATHS).map(function(k){
     var p = PATHS[k];
@@ -2155,11 +2204,6 @@ function renderStart(){
       '<div class="actions"><button class="primary" id="resumeBtn">繼續上次的旅程</button>'+
       '<button class="ghost" id="discardSaveBtn">捨棄，重新開始</button></div></div>';
   }
-  var seedBlock = showSeedField
-    ? '<label class="field"><span class="lbl">世界種子（同種子＋同選擇＝同人生）</span>'+
-      '<div style="display:flex; gap:8px;"><input type="text" id="seedInput" placeholder="留空則隨機" style="flex:1;">'+
-      '<button class="ghost" id="rerollSeed" type="button">換一個</button></div></label>'
-    : '<button class="ghost" id="seedToggle" type="button" style="margin-bottom:14px;">進階：自訂世界種子</button>';
   return resumeBlock+'<div class="startpage">'+
     '<h2 class="title">角色設定</h2>'+
     '<div class="sub">Character Sheet</div>'+
@@ -2167,7 +2211,7 @@ function renderStart(){
     '<label class="field"><span class="lbl">選擇路線</span></label>'+
     '<div class="paths" id="pathPicker">'+cards+'</div>'+
     '<div id="bgWrap"></div>'+
-    seedBlock+
+    '<div id="seedArea">'+seedBlockHTML()+'</div>'+
     '<div class="actions"><button class="primary" id="startBtn">開始職涯 ▸ 新人期</button></div>'+
     '</div>';
 }
@@ -2192,12 +2236,7 @@ function bindStart(){
     Array.prototype.forEach.call(picker.children, function(c){ c.classList.toggle("sel", c===card); });
     document.getElementById("bgWrap").innerHTML = bgPickerHTML();
   });
-  var seedToggle = document.getElementById("seedToggle");
-  if(seedToggle) seedToggle.addEventListener("click", function(){ showSeedField = true; render(); });
-  var rerollBtn = document.getElementById("rerollSeed");
-  if(rerollBtn) rerollBtn.addEventListener("click", function(){
-    document.getElementById("seedInput").value = makeSeed();
-  });
+  bindSeedArea();
   document.getElementById("startBtn").addEventListener("click", function(){
     var name = document.getElementById("nameInput").value.trim();
     if(!startPath){ alert("請先選擇一條路線。"); return; }
