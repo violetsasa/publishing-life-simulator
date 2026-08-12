@@ -223,17 +223,17 @@ button.ghost{
   padding:9px 16px; cursor:pointer; transition:border-color .15s ease, color .15s ease, transform .12s ease;
 }
 button.ghost:hover{ border-color:var(--ink); color:var(--ink); transform:translateY(-1px); }
-.actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
+.actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:4px; }
 
 /* start screen */
 .startpage{
   background:var(--panel); border:2.5px solid var(--ink); border-radius:20px; padding:26px 22px; margin-top:6px;
   box-shadow:0 6px 0 rgba(34,55,74,.06), 0 10px 22px rgba(34,55,74,.1);
 }
-h2.title{ font-family:var(--font-display); font-size:1.2rem; margin:0 0 4px; color:var(--chalk); text-wrap:balance; font-weight:700;}
-.sub{ font-size:.68rem; color:var(--dim); letter-spacing:.06em; font-weight:700; text-transform:uppercase; margin-bottom:14px;}
+h2.title{ font-family:var(--font-display); font-size:1.2rem; margin:0 0 4px; color:var(--chalk); text-wrap:balance; font-weight:700; text-align:center;}
+.sub{ font-size:.68rem; color:var(--dim); letter-spacing:.06em; font-weight:700; text-transform:uppercase; margin-bottom:14px; text-align:center;}
 p{ line-height:1.75; margin:0 0 14px; font-size:1rem; }
-label.field{ display:block; margin-bottom:14px; }
+label.field{ display:block; margin-bottom:14px; text-align:center; }
 label.field .lbl{ font-size:.68rem; letter-spacing:.04em; font-weight:700; color:var(--dim); display:block; margin-bottom:6px;}
 input[type=text]{
   width:100%; font-family:var(--font-body); font-size:1rem; padding:10px 14px;
@@ -2174,7 +2174,7 @@ function seedBlockHTML(){
     ? '<label class="field"><span class="lbl">世界種子（同種子＋同選擇＝同人生）</span>'+
       '<div style="display:flex; gap:8px;"><input type="text" id="seedInput" placeholder="留空則隨機" style="flex:1;">'+
       '<button class="ghost" id="rerollSeed" type="button">換一個</button></div></label>'
-    : '<button class="ghost" id="seedToggle" type="button" style="margin-bottom:14px;">進階：自訂世界種子</button>';
+    : '<button class="ghost" id="seedToggle" type="button" style="display:block; margin:0 auto 14px;">進階：自訂世界種子</button>';
 }
 function bindSeedArea(){
   var rerollBtn = document.getElementById("rerollSeed");
