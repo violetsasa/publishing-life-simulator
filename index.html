@@ -537,7 +537,7 @@ EV({id:"pandemic", once:true, stageMax:2,
       result:"省下的每一分錢都很有感，但撐過去的過程也磨掉了不少精神。"}
   ]}),
 
-EV({id:"lowbirth", stageMin:2,
+EV({id:"lowbirth", paths:["editor","marketing"], stageMin:2,
   title:"少子化的帳，攤在眼前",
   desc:function(p){ return "出版市場年度報告出爐：讀者基數持續萎縮。"+p.name+"開會時被問「你有什麼對策」。"; },
   choices:[
@@ -567,7 +567,7 @@ EV({id:"foundation", paths:["editor","marketing"], stageMin:2,
       result:"截圖流出的那天，"+"手機震到沒電，此後好一陣子都不敢多話。"}
   ]}),
 
-EV({id:"blurb_backfire", stageMin:1,
+EV({id:"blurb_backfire", paths:["author","editor","marketing"], stageMin:1,
   title:"邀請的推薦人，隔天就炎上",
   desc:function(p){ return p.name+"辛苦邀來一位重量級推薦人掛名，書上市前一晚，對方卻因為一則舊發言被起底炎上。"; },
   choices:[
@@ -579,7 +579,7 @@ EV({id:"blurb_backfire", stageMin:1,
       fail:{delta:{fame:-10, c:-5}, result:"賭注沒有賭對，這件事後來又被翻出來鞭了一輪。"}}
   ]}),
 
-EV({id:"belt_typo", title:"書腰上的錯字",
+EV({id:"belt_typo", paths:["author","editor","marketing"], title:"書腰上的錯字",
   desc:function(p){ return "首刷到貨當天，眼尖的讀者發現書腰上把書名印錯一個字，截圖迅速在社群流傳，配文是「這是哪招行銷？」"; },
   choices:[
     {label:"順勢自嘲，把錯字做成限量哏", delta:{fame:8, money:-2}, style:"bold",
@@ -599,7 +599,7 @@ EV({id:"language_police", title:"讀者檢討你用「支語」",
       fail:{delta:{fame:-8, c:-4}, result:"沉默被解讀成心虛，戰火反而燒得更旺。"}}
   ]}),
 
-EV({id:"merger", stageMin:3,
+EV({id:"merger", paths:["editor","marketing"], stageMin:3,
   title:"產業傳出大型併購案",
   desc:function(p){ return "兩間指標出版集團傳出合併消息，業界人心浮動，大家私下都在打聽誰會被資遣。"; },
   choices:[
