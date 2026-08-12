@@ -1367,6 +1367,17 @@ EV({id:"empty_talk", paths:["store"], repeat:true, title:"冷場的講座",
       result:"自我安慰完，心情倒是意外地平靜下來。"}
   ]}),
 
+EV({id:"talk_series_fork", paths:["store"], once:true,
+  requires:function(p){ return logCount("冷場的講座")>=3; },
+  title:"認真考慮講座還要不要辦下去",
+  desc:function(p){ return "講座又一次冷場，"+p.name+"開始認真想：這種活動到底是真的有用，還是只是自己一頭熱。"; },
+  choices:[
+    {label:"改辦更貼近在地生活的小型讀書會，不追求人數", delta:{c:4, a:2}, style:"safe",
+      result:"人數依然不多，但每次來的都是真心想聊書的人，這種小圈子反而養出了黏著度。"},
+    {label:"乾脆停辦，把心力省下來做別的事", delta:{money:3, d:2}, style:"bold",
+      result:"停辦之後省下的時間和場地費都是真的，只是店裡少了一個能跟熟客碰面的理由。"}
+  ]}),
+
 EV({id:"discount_war", paths:["store"], repeat:true, title:"電商折扣戰開打",
   desc:function(p){ return stale("電商折扣戰開打", [
     "電商平台祭出全館 79 折，"+p.name+"店裡的定價書架前，讀者只是拍照比價後默默離開。",
@@ -1425,6 +1436,17 @@ EV({id:"community_market", paths:["store"], repeat:true, title:"里長邀請合�
       result:"婉拒之後日常營運沒受影響，只是跟里長的關係，多少淡了一點。"}
   ]}),
 
+EV({id:"community_hub_fork", paths:["store"], once:true,
+  requires:function(p){ return logCount("里長邀請合辦市集")>=3; },
+  title:"認真考慮跟里長談長期合作",
+  desc:function(p){ return "市集辦了這麼多次，里長這次半開玩笑提議：乾脆簽個長期合作，把店變成社區的固定活動據點。"; },
+  choices:[
+    {label:"答應長期合作，店變成社區據點", delta:{c:8, fame:4, d:-3}, style:"safe",
+      result:"店裡三不五時就有活動，人氣是真的養起來了，只是自己的空閒時間也跟著被填滿。"},
+    {label:"維持現在這種偶爾配合的關係就好", delta:{d:2}, style:"bold",
+      result:"維持原本的節奏，日子過得比較有餘裕，只是那個「社區據點」的想像，先擱著了。"}
+  ]}),
+
 EV({id:"flood", paths:["store"], title:"淹水的那個颱風夜",
   desc:function(p){ return "一場豪雨讓店裡淹水，"+p.name+"半夜衝回店裡，看著泡水的書架，久久說不出話。"; },
   choices:[
@@ -1475,6 +1497,17 @@ EV({id:"showrooming", paths:["store"], repeat:true, title:"拍照比價的顧客
       result:"搭話之後對方反而留下來聊了一會兒，最後真的買了一本不一樣的書。"},
     {label:"什麼都不說，默默把書擺回原位", delta:{d:-3, fame:-1}, style:"bold",
       result:"默默把書擺回原位，這種無力感，已經有點習慣了。"}
+  ]}),
+
+EV({id:"store_online_fork", paths:["store"], once:true,
+  requires:function(p){ return logCount("拍照比價的顧客")>=3; },
+  title:"認真考慮要不要也做電商",
+  desc:function(p){ return "拍照比價的顧客見多了，"+p.name+"開始認真想：與其一直討厭這個行為，不如也開一個自己的網路小店試試。"; },
+  choices:[
+    {label:"開一個自己的網路小店，順便賣選品", delta:{money:-8, a:3, fame:3}, style:"bold",
+      result:"網路小店慢慢養出了自己的客群，那些拍照比價的顧客，好歹有一部分回頭跟自己買了。"},
+    {label:"堅持只做實體店的體驗，不跟", delta:{d:2, a:2}, style:"safe",
+      result:"沒有跟風做電商，把心力都留在店裡的選書和陳列上，這份堅持依然有人買單。"}
   ]}),
 
 EV({id:"no_creativity", paths:["store"], weight:1.3, repeat:true,
@@ -1574,6 +1607,17 @@ EV({id:"supplier_shortage", paths:["store"], repeat:true,
       result:"囤的冷門好書慢慢養出了固定客群，反而成了店裡的招牌區。"},
     {label:"據理力爭，跟經銷商談進貨量", delta:{c:-2, money:2}, style:"bold",
       result:"力爭之後拿到的貨量沒差多少，但跟經銷商的關係倒是變得有點尷尬。"}
+  ]}),
+
+EV({id:"store_niche_fork", paths:["store"], once:true,
+  requires:function(p){ return logCount("熱門新書被大通路吃光")>=3; },
+  title:"認真考慮改走獨家選書路線",
+  desc:function(p){ return "熱門新書永遠搶不過大通路，"+p.name+"開始認真想：與其一直陪著搶那些注定分不到的貨，不如乾脆放棄暢銷書，專心做獨家、冷門的選書。"; },
+  choices:[
+    {label:"全面轉型做獨家／小眾選書店", delta:{a:6, money:-4, fame:3}, style:"bold",
+      result:"轉型後的選書更有個性，來的客人也更懂得欣賞，只是暢銷書帶來的穩定現金流，一去不回了。"},
+    {label:"還是留一些暢銷書撐場面，兩邊都做", delta:{money:2, d:-2}, style:"safe",
+      result:"兩邊都做，貨源分配的爛帳依然每次上演，只是至少現金流還算穩得住。"}
   ]})
 ];
 var EVENTS_BY_ID = {};
