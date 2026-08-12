@@ -567,7 +567,7 @@ EV({id:"foundation", paths:["editor","marketing"], stageMin:2,
       result:"截圖流出的那天，"+"手機震到沒電，此後好一陣子都不敢多話。"}
   ]}),
 
-EV({id:"blurb_backfire", paths:["author","editor","marketing"], stageMin:1,
+EV({id:"blurb_backfire", paths:["editor"], stageMin:1,
   title:"邀請的推薦人，隔天就炎上",
   desc:function(p){ return p.name+"辛苦邀來一位重量級推薦人掛名，書上市前一晚，對方卻因為一則舊發言被起底炎上。"; },
   choices:[
@@ -579,7 +579,7 @@ EV({id:"blurb_backfire", paths:["author","editor","marketing"], stageMin:1,
       fail:{delta:{fame:-10, c:-5}, result:"賭注沒有賭對，這件事後來又被翻出來鞭了一輪。"}}
   ]}),
 
-EV({id:"belt_typo", paths:["author","editor","marketing"], title:"書腰上的錯字",
+EV({id:"belt_typo", paths:["editor"], title:"書腰上的錯字",
   desc:function(p){ return "首刷到貨當天，眼尖的讀者發現書腰上把書名印錯一個字，截圖迅速在社群流傳，配文是「這是哪招行銷？」"; },
   choices:[
     {label:"順勢自嘲，把錯字做成限量哏", delta:{fame:8, money:-2}, style:"bold",
