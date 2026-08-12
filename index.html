@@ -102,6 +102,15 @@ button{ font:inherit; }
   border-left:2px solid var(--rule); padding:10px 0 10px 14px;
 }
 .entry.pending{ border-left-color:var(--gold); }
+.entry.trait{ border-left-color:var(--gold); background:rgba(245,166,35,0.08); border-radius:0 6px 6px 0; }
+.entry.trait .etitle{ color:var(--gold); display:flex; align-items:center; gap:6px; }
+.entry.trait .trait-icon{ width:18px; height:auto; color:var(--gold); }
+.entry.trait p{ font-size:.86rem; color:var(--dim); }
+.traitlist{ display:flex; flex-direction:column; gap:8px; margin:4px 0 20px; }
+.traitlist .tcard{ border:1px solid var(--gold); border-radius:6px; padding:8px 12px; background:rgba(245,166,35,0.06); }
+.traitlist .tname{ font-family:var(--font-display); font-size:.92rem; color:var(--gold); display:flex; align-items:center; gap:6px; margin-bottom:2px; }
+.traitlist .tname .icon{ width:15px; height:auto; }
+.traitlist .tdesc{ font-size:.78rem; color:var(--dim); line-height:1.5; }
 .entry .etitle{ font-family:var(--font-display); font-size:1.05rem; margin:0 0 4px; color:var(--chalk); text-wrap:balance;}
 .entry .esub{ font-family:var(--font-mono); font-size:.62rem; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px;}
 .entry p{ margin:0 0 8px; line-height:1.7; font-size:.95rem; color:var(--chalk); }
@@ -408,9 +417,15 @@ function fmtDelta(p, delta){
 }
 function applyDelta(p, delta){
   ["a","b","c","d","e"].forEach(function(k){
-    if(delta[k]) p.stats[k]=clamp(p.stats[k]+delta[k],0,100);
+    if(!delta[k]) return;
+    var lo = (k==="d" && p.traits && p.traits.battleScarred) ? 15 : 0;
+    p.stats[k]=clamp(p.stats[k]+delta[k], lo, 100);
   });
-  if(delta.money) p.money += delta.money;
+  if(delta.money){
+    var m = delta.money;
+    if(m<0 && p.traits && p.traits.pennyPincher) m = Math.round(m*0.8);
+    p.money += m;
+  }
   if(delta.fame) p.fame = clamp(p.fame+(delta.fame||0),0,100);
 }
 
@@ -538,6 +553,59 @@ EV({id:"friend_kol", stageMin:2,
   choices:[
     {label:"上，藉機累積個人聲量", delta:{fame:9, c:-3}, style:"bold"},
     {label:"婉拒，怕日後在業界難做人", delta:{c:4, fame:-1}, style:"safe"}
+  ]}),
+
+/* ---------- 感情支線（三階段：認識→穩定→抉擇，狀態靠 flags 串接） ---------- */
+EV({id:"meet_someone", stageMin:1, stageMax:3,
+  requires:function(p){ return !p.flags.dating && !p.flags.brokeUp && !p.flags.married; },
+  title:"心動的瞬間",
+  desc:function(p){ return "一場跨部門的交流場合上，"+p.name+"注意到一個讓人多看兩眼的人，對方似乎也是。"; },
+  choices:[
+    {label:"鼓起勇氣，主動要了聯絡方式", delta:{c:2}, style:"bold", flag:"dating",
+      result:"聊開之後才發現意外合拍，這段關係悄悄開始了。"},
+    {label:"只是心裡想想，沒有真的行動", delta:{}, style:"safe",
+      result:"錯過就是錯過了，這份心動被壓回心底，繼續埋頭工作。"}
+  ]}),
+
+EV({id:"relationship_deepens", stageMin:2, once:true,
+  requires:function(p){ return p.flags.dating && !p.flags.brokeUp && !p.flags.married && !p.flags.relationshipStrong; },
+  title:"穩定交往的甜蜜與現實",
+  desc:function(p){ return "感情穩定下來後，出版業日夜顛倒的作息開始考驗這段關係，"+p.name+"必須做點什麼。"; },
+  choices:[
+    {label:"主動調整步調，把時間留給對方", delta:{d:4, money:-3}, style:"safe", flag:"relationshipStrong",
+      result:"願意調整步調之後，這段感情反而更穩了一些。"},
+    {label:"工作優先，先撐過這一波忙季再說", style:"bold",
+      chance:function(p){ return clamp(0.4+p.stats.c/200, 0.25, 0.7); },
+      success:{delta:{c:3}, flag:"relationshipStrong",
+        result:"對方竟然願意等，這份體諒讓感情反而更緊了一些。"},
+      fail:{delta:{c:-6, d:-5}, flag:"brokeUp",
+        result:"這次沒能撐過去，這段感情走到了盡頭。"}}
+  ]}),
+
+EV({id:"proposal", stageMin:3, once:true,
+  requires:function(p){ return p.flags.relationshipStrong && !p.flags.married && !p.flags.brokeUp; },
+  title:"求婚的念頭",
+  desc:function(p){ return "走到這一步，"+p.name+"開始認真想起「結婚」這兩個字，也開始盤算存款夠不夠。"; },
+  choices:[
+    {label:"存夠錢，正式求婚", delta:{money:-15, d:5}, style:"safe", flag:"married",
+      result:"婚禮辦得不算豪華，但很真心，往後的日子多了一個一起扛的人。"},
+    {label:"維持現狀，不急著進入婚姻", delta:{c:2}, style:"bold",
+      result:"兩人都覺得不急，感情依然穩定，只是少了一張證書。"}
+  ]}),
+
+EV({id:"marriage_balance", paths:["all"], stageMin:3, repeat:true,
+  requires:function(p){ return !!p.flags.married; },
+  title:"婚姻與工作的拉扯",
+  desc:function(p){ return stale("婚姻與工作的拉扯", [
+    "又一次錯過家庭聚餐，"+p.name+"的另一半在訊息裡打了一句「沒關係，你去忙」。",
+    "類似的對話又發生了一次，"+p.name+"開始認真思考工作與家庭的比重。",
+    "這已經是常態了，"+p.name+"和另一半漸漸摸出一套彼此都能接受的相處節奏。"
+  ]); },
+  choices:[
+    {label:"推掉這次的工作，把時間留給家人", delta:{money:-4, d:4}, style:"safe",
+      result:"推掉工作換來的陪伴，讓家裡的氣氛明顯輕鬆不少。"},
+    {label:"還是先把工作忙完再說", delta:{d:-5, fame:2}, style:"bold",
+      result:"工作是忙完了，但回家看到的那個表情，這件事記了很久。"}
   ]}),
 
 /* ---------- author ---------- */
@@ -1305,7 +1373,12 @@ function newGame(name, pathKey, background){
     pendingEventId:null,
     forcedEnding:null,
     lowGritStreak:0,
-    styleCount:{bold:0, safe:0}
+    styleCount:{bold:0, safe:0},
+    traits:{},
+    gambleWinStreak:0,
+    allocFocusKey:null,
+    allocFocusStreak:0,
+    hadNegativeMoneyEarly:false
   };
   setSeed(S.seed);
   startYear();
@@ -1314,7 +1387,7 @@ function newGame(name, pathKey, background){
 /* ---------- turn engine: 1 year = alloc once + 2 events (年初/年中/年末) ---------- */
 function poolForYear(){
   var stageNo = S.stageIdx+1;
-  return 6 + Math.floor(rng()*3) + (stageNo>=3?1:0); // 6-8(+1 late)
+  return 6 + Math.floor(rng()*3) + (stageNo>=3?1:0) + (S.traits.specialist?1:0); // 6-8(+1 late)(+1 specialist)
 }
 
 function startYear(){
@@ -1333,6 +1406,7 @@ function startYear(){
 }
 
 function confirmAllocation(){
+  checkAllocTraits();
   Object.keys(S.allocSpent).forEach(function(k){
     S.stats[k] = clamp(S.stats[k]+S.allocSpent[k],0,100);
   });
@@ -1409,15 +1483,18 @@ function resolveChoice(idx){
   var gambleTag = "";
   if(choice.success && choice.fail){
     var chance = typeof choice.chance==="function" ? choice.chance(S) : (choice.chance===undefined?0.5:choice.chance);
+    chance = gambleChance(chance);
     var won = rng() < chance;
     branch = won ? choice.success : choice.fail;
     gambleTag = won
       ? '<span class="gamble-tag win">賭贏了</span>'
       : '<span class="gamble-tag lose">賭輸了</span>';
+    checkGambleTraits(won);
   }
   var deltaList = fmtDelta(S, branch.delta);
   var verdict = verdictFor(branch.delta);
   applyDelta(S, branch.delta);
+  if(S.stageIdx===0 && S.money<0) S.hadNegativeMoneyEarly = true;
   if(choice.style){ S.styleCount[choice.style] = (S.styleCount[choice.style]||0)+1; }
   if(choice.flag) S.flags[choice.flag] = true;
   if(branch.flag) S.flags[branch.flag] = true;
@@ -1453,6 +1530,7 @@ function afterYear(){
   S.age++;
   if(S.turnInStage>=STAGES[S.stageIdx].turns){
     var finishedStage = STAGES[S.stageIdx];
+    if(finishedStage.key==="rookie" && !S.hadNegativeMoneyEarly) unlockTrait("pennyPincher");
     S.stageIdx++;
     S.turnInStage=0;
     if(S.stageIdx>=STAGES.length){ computeEnding(); return; }
@@ -1483,6 +1561,7 @@ function checkBurnoutCrisis(){
   if(S.stats.d<=20){ S.lowGritStreak = (S.lowGritStreak||0)+1; }
   else{ S.lowGritStreak = 0; }
   if(S.lowGritStreak===2){ S.flags.nearBurnout = true; }
+  if(S.flags.nearBurnout && S.lowGritStreak<2) unlockTrait("battleScarred");
   if(S.lowGritStreak>=3){
     S.forcedEnding = "burnout";
     computeEnding();
@@ -1545,8 +1624,61 @@ var TAGS = [
   {label:"標案風波倖存者", test:function(){ return logHas("標案風波"); }},
   {label:"基金會知情人士", test:function(){ return logHas("老闆的那個基金會"); }},
   {label:"賭徒性格", test:function(){ return (S.styleCount.bold||0)-(S.styleCount.safe||0)>=6; }},
-  {label:"穩紮穩打", test:function(){ return (S.styleCount.safe||0)-(S.styleCount.bold||0)>=6; }}
+  {label:"穩紮穩打", test:function(){ return (S.styleCount.safe||0)-(S.styleCount.bold||0)>=6; }},
+  {label:"步入婚姻", test:function(){ return !!S.flags.married; }},
+  {label:"為工作分過手", test:function(){ return !!S.flags.brokeUp; }},
+  {label:"單身到底", test:function(){ return !S.flags.dating && (S.ending.tag==="good"||S.ending.tag==="great"); }}
 ];
+
+/* ---------- 特質系統：由行為模式解鎖，永久改變後續機制 ---------- */
+var TRAIT_DEFS = {
+  ironNerve:{ name:"孤注一擲的膽識",
+    desc:"連續三次放手一搏都賭贏了，你開始相信自己的直覺——往後每一次「放手一搏」，成功機率永久 +8%。" },
+  specialist:{ name:"偏執式精進",
+    desc:"連續三年把大半心力都砸進同一項本事，那份專精開始回饋你——往後每年可分配的點數永久 +1。" },
+  pennyPincher:{ name:"精打細算",
+    desc:"新人期挺過來時帳戶從沒見紅，這份謹慎成了本能——往後任何虧錢的決定，虧損永久打八折。" },
+  battleScarred:{ name:"江湖百鍊",
+    desc:"你曾經瀕臨崩潰邊緣，卻硬是撐了回來。從此你的底線比別人更深——關鍵能力值永遠不會低於 15。" }
+};
+function unlockTrait(key){
+  if(S.traits[key]) return;
+  S.traits[key] = true;
+  var t = TRAIT_DEFS[key];
+  S.entries.push(
+    '<div class="entry trait"><div class="esub">'+S.age+' 歲 · 特質解鎖</div>'+
+    '<div class="etitle">'+icon("star","trait-icon")+esc(t.name)+'</div>'+
+    '<p>'+esc(t.desc)+'</p></div>'
+  );
+}
+function gambleChance(base){
+  var c = base;
+  if(S && S.traits && S.traits.ironNerve) c += 0.08;
+  return clamp(c, 0.05, 0.95);
+}
+function checkGambleTraits(won){
+  if(won){
+    S.gambleWinStreak = (S.gambleWinStreak||0)+1;
+    if(S.gambleWinStreak>=3) unlockTrait("ironNerve");
+  } else {
+    S.gambleWinStreak = 0;
+  }
+}
+function checkAllocTraits(){
+  var total = allocSpentTotal();
+  if(total<=0){ S.allocFocusKey=null; S.allocFocusStreak=0; return; }
+  var domKey=null, domVal=-1;
+  Object.keys(S.allocSpent).forEach(function(k){
+    if(S.allocSpent[k]>domVal){ domVal=S.allocSpent[k]; domKey=k; }
+  });
+  if(domKey===S.allocFocusKey && domVal>=total/2){
+    S.allocFocusStreak++;
+  } else {
+    S.allocFocusKey = (domVal>=total/2) ? domKey : null;
+    S.allocFocusStreak = S.allocFocusKey ? 1 : 0;
+  }
+  if(S.allocFocusStreak>=3) unlockTrait("specialist");
+}
 
 function computeTags(){
   var matched = TAGS.filter(function(t){ try{ return t.test(); }catch(e){ return false; } });
@@ -1595,6 +1727,7 @@ function computeEnding(){
   }
   S.ending = out;
   S.ending.tags = computeTags();
+  S.ending.traits = Object.keys(S.traits).filter(function(k){ return S.traits[k]; }).map(function(k){ return TRAIT_DEFS[k]; });
   S.phase="ending";
   render(true);
 }
@@ -1943,6 +2076,9 @@ function renderEnding(){
     '<div class="sub">'+PATHS[S.path].noun+' '+esc(S.name)+' · 心境 '+S.age+' 歲 · 種子 '+esc(S.seed)+'</div>'+
     '<p>'+e.text+'</p>'+
     (e.tags&&e.tags.length ? '<div class="careertags">'+e.tags.map(function(t){return '<span>'+esc(t)+'</span>';}).join("")+'</div>' : "")+
+    (e.traits&&e.traits.length ? '<div class="sub" style="margin-top:6px;">解鎖特質</div><div class="traitlist">'+
+      e.traits.map(function(t){ return '<div class="tcard"><div class="tname">'+icon("star")+esc(t.name)+'</div><div class="tdesc">'+esc(t.desc)+'</div></div>'; }).join("")+
+      '</div>' : "")+
     statBarsHTML()+
     '<div class="sub" style="margin-top:14px;">生涯記事</div>'+
     '<div class="history">'+(historyLines||"（平淡的一生，沒留下什麼紀錄）")+'</div>'+
