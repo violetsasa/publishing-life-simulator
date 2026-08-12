@@ -757,6 +757,19 @@ EV({id:"writers_block", paths:["author"], repeat:true, title:"江郎才盡的那
       result:"硬擠出來的文字讀起來還算能用，但這幾天幾乎沒睡好。"}
   ]}),
 
+EV({id:"writer_career_fork", paths:["author"], once:true,
+  requires:function(p){ return logCount("江郎才盡的那個月")>=3; },
+  title:"認真動了轉行的念頭",
+  desc:function(p){ return "又一次卡稿的深夜，"+p.name+"盯著存款餘額，第一次認真想：如果寫作真的養不活自己，是不是該找一份穩定收入的工作。"; },
+  choices:[
+    {label:"去投一份穩定的工作，寫作變成下班後的事", delta:{money:12, a:-4, d:6}, style:"safe",
+      result:"穩定的薪水讓生活鬆了一口氣，只是下班後真的坐到書桌前的次數，比想像中少。"},
+    {label:"賭上僅剩的積蓄，把這本卡住的書寫完", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.a/150, 0.2, 0.65); },
+      success:{delta:{fame:10, a:5}, result:"這本熬出來的書意外接住了，讀者留言說「看得出來是拚了命寫的」。"},
+      fail:{delta:{money:-14, d:-6}, result:"書是寫完了，反應卻很平淡，存款跟著那個平淡一起見底。"}}
+  ]}),
+
 EV({id:"delay_penalty", paths:["author"], repeat:true, title:"違約金追殺令",
   desc:function(p){ return stale("違約金追殺令", [
     "交稿一再延遲，出版社終於寄來存證信函，語氣客氣，附件是違約金試算表。",
@@ -847,6 +860,17 @@ EV({id:"boss_pressure", paths:["editor"], repeat:true, stageMin:2, title:"主管
       result:"拒絕之後主管的臉色不太好看，但"+"至少守住了自己的底線。"},
     {label:"敷衍應付、隨便交差", delta:{d:-5, money:2}, style:"safe",
       result:"應付過去了，"+"心裡卻一直有種說不上來的不舒服。"}
+  ]}),
+
+EV({id:"editor_fed_up", paths:["editor"], once:true,
+  requires:function(p){ return logCount("主管的不合理要求")>=3 && !p.flags.jobHunting && !p.flags.jumped && !p.flags.foundedPress; },
+  title:"受夠了，開始物色新東家",
+  desc:function(p){ return "類似的要求已經不是第一次了，"+p.name+"終於受夠，開始不動聲色地在人力銀行上更新履歷。"; },
+  choices:[
+    {label:"先低調投遞，看看有沒有更好的位置", delta:{c:3}, style:"safe", flag:"jobHunting",
+      result:"履歷投出去後心裡踏實不少，這行說小不小，很快就有回音。"},
+    {label:"算了，這行到哪裡都差不多，先忍著", delta:{d:-4}, style:"bold",
+      result:"忍下這口氣，只是每次類似的要求再出現，忍耐的成本都更高一點。"}
   ]}),
 
 EV({id:"factcheck_save", paths:["editor"], title:"驚險攔截的事實查核",
@@ -1083,6 +1107,17 @@ EV({id:"editor_nag", paths:["translator"], repeat:true, title:"每天傳訊息�
       result:"誠實回報之後，編輯的追蹤訊息明顯少了，信任感是真的有累積起來。"},
     {label:"已讀不回，先裝死", delta:{d:-8, c:-4}, style:"bold",
       result:"裝死換來幾天清靜，但接下來要面對的訊息只會更急更多。"}
+  ]}),
+
+EV({id:"translator_switch_editor", paths:["translator"], once:true,
+  requires:function(p){ return logCount("每天傳訊息問進度的編輯")>=3; },
+  title:"認真考慮換個編輯合作",
+  desc:function(p){ return "這位編輯的追蹤頻率已經讓"+p.name+"有點喘不過氣，這時另一家出版社的編輯私下傳訊探聽有沒有空接案。"; },
+  choices:[
+    {label:"婉拒新邀約，先把手上這本做完再說", delta:{d:3, c:2}, style:"safe",
+      result:"婉拒之後日子照舊，只是那句「有沒有空接案」偶爾還是會想起。"},
+    {label:"接下新邀約，換一家出版社試試", delta:{c:5, d:6, money:-2}, style:"bold",
+      result:"換了個新的合作對象，磨合期少賺了一點，但終於不再對訊息提示音心跳加速。"}
   ]}),
 
 EV({id:"author_nitpick", paths:["translator"], repeat:true, stageMin:2, title:"原作者龜毛審稿",
@@ -1487,7 +1522,8 @@ function newGame(name, pathKey, background){
     allocFocusStreak:0,
     hadNegativeMoneyEarly:false,
     rngCalls:0,
-    company:null
+    company:null,
+    pendingChoiceOrder:null
   };
   setSeed(S.seed);
   if(pathKey==="editor" || pathKey==="marketing"){ S.company = pick(COMPANIES); }
@@ -1548,6 +1584,16 @@ function effectiveWeight(ev){
   if(seen>=2) return ev.weight*0.4;
   return ev.weight;
 }
+/* 選項顯示順序洗牌，避免「永遠選第一個」變成主宰策略；用種子 rng() 產生，重整頁面後仍可重現 */
+function shuffledIndices(n){
+  var arr = [];
+  for(var i=0;i<n;i++) arr.push(i);
+  for(var i=arr.length-1;i>0;i--){
+    var j = Math.floor(rng()*(i+1));
+    var tmp=arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+  }
+  return arr;
+}
 function drawEvent(){
   var pool = eligibleEvents();
   if(pool.length===0){ continueAfterEvent(); return; }
@@ -1558,6 +1604,7 @@ function drawEvent(){
   S.usedEvents[chosen.id]=true;
   S.eventSeenCount[chosen.id] = (S.eventSeenCount[chosen.id]||0)+1;
   S.pendingEventId = chosen.id;
+  S.pendingChoiceOrder = shuffledIndices(chosen.choices.length);
   S.phase="event";
   if(rng()<0.4){
     S.entries.push('<div class="ticker"><b>快訊</b><span>'+esc(pick(TICKERS))+'</span></div>');
@@ -1714,6 +1761,7 @@ function allocSpentTotal(){
 }
 function allocInc(k){
   if(allocSpentTotal()>=S.allocPool) return;
+  if(S.stats[k]+S.allocSpent[k]>=100) return;
   S.allocSpent[k]++;
   render();
 }
@@ -2100,7 +2148,11 @@ function render(scrollDown){
     var ev = getPendingEvent();
     pendingLog = '<div class="entry pending"><div class="esub">'+S.age+' 歲 · '+BEAT_LABELS[S.eventsThisYear+1]+'</div>'+
       '<div class="etitle">'+esc(ev.title)+'</div><p>'+esc(ev.desc(S))+'</p></div>';
-    footer = '<div class="choices">'+ev.choices.map(function(c,i){
+    var order = (S.pendingChoiceOrder && S.pendingChoiceOrder.length===ev.choices.length)
+      ? S.pendingChoiceOrder
+      : ev.choices.map(function(c,i){ return i; });
+    footer = '<div class="choices">'+order.map(function(i){
+      var c = ev.choices[i];
       var oddsHTML = "";
       if(c.success && c.fail){
         var baseChance = typeof c.chance==="function" ? c.chance(S) : (c.chance===undefined?0.5:c.chance);
@@ -2159,7 +2211,7 @@ function renderAllocFooter(){
     return '<div class="alloc-row"><span class="alloc-name">'+labels[k]+'</span>'+
       '<div class="alloc-bar"><i style="width:'+clamp(val,0,100)+'%"></i></div>'+
       '<div class="alloc-btns"><button data-dec="'+k+'" '+(S.allocSpent[k]<=0?"disabled":"")+'>−</button>'+
-      '<button data-inc="'+k+'" '+(spent>=S.allocPool?"disabled":"")+'>＋</button></div></div>';
+      '<button data-inc="'+k+'" '+((spent>=S.allocPool||val>=100)?"disabled":"")+'>＋</button></div></div>';
   }).join("");
   return '<p class="hint">年初：這一年能投入的心力有限，分配給誰，決定接下來會遇上什麼。</p>'+
     '<div class="pool">可分配點數：'+(S.allocPool-spent)+' / '+S.allocPool+'</div>'+
