@@ -1345,6 +1345,31 @@ EV({id:"rent_hike", paths:["store"], title:"房東調漲租金三成",
       result:"搬遷的過程折騰不小，新店面倒是意外談到不錯的條件。"}
   ]}),
 
+EV({id:"store_exit_fork", paths:["store"], stageMin:3, once:true,
+  requires:function(p){ return !p.flags.sellingStore && !p.flags.onlineOnlyPivot &&
+    (logHas("房東調漲租金三成") || logCount("電商折扣戰開打")>=2 || logCount("熱門新書被大通路吃光")>=2); },
+  title:"頂讓的念頭",
+  desc:function(p){ return "房租、電商折扣、大通路的貨源壟斷，一年比一年更明顯地擠壓著這間店。"+p.name+"開始認真想：與其硬撐到某天真的撐不下去，不如趁還有選擇的時候，好好規劃退場。"; },
+  choices:[
+    {label:"認真談頂讓，準備把店轉手出去", delta:{money:10, fame:-4, d:5}, style:"bold", flag:"sellingStore",
+      result:"頂讓的消息傳開後，老讀者陸續來道別，"+"心裡比想像中更捨不得，但決定已經做了。"},
+    {label:"再撐一陣子，不到最後關頭不放手", delta:{d:-4, money:-3}, style:"safe",
+      result:"決定再撐一段時間，只是每次算帳的時候，那個「頂讓」的念頭還是會冒出來。"}
+  ]}),
+
+EV({id:"store_exit_next", paths:["store"], stageMin:3, once:true,
+  requires:function(p){ return p.flags.sellingStore && !p.flags.onlineOnlyPivot; },
+  title:"轉手之後，下一步去哪",
+  desc:function(p){ return "頂讓的事談定了，"+p.name+"開始想接下來要做什麼——這行做了這麼多年，總不會就此跟書徹底斷了關係。"; },
+  choices:[
+    {label:"去連鎖書店應徵店長，換一種方式顧書", delta:{money:15, d:5, c:2}, style:"safe", flag:"retailManager",
+      result:"換了個身分顧書，制度化的工作節奏一開始很不習慣，但薪水穩定得讓人意外安心。"},
+    {label:"接顧問案，幫其他獨立書店做選書規劃", delta:{money:8, fame:6, a:4}, style:"safe", flag:"bookConsultant",
+      result:"顧問案接得不算多，但每一次都能把這些年撞牆撞出來的心得，交給下一個還在硬撐的人。"},
+    {label:"徹底離開這行，去做完全不相關的工作", delta:{money:20, d:10, a:-8, fame:-5}, style:"bold", flag:"leftBookIndustry",
+      result:"離開書業的第一個月，"+"睡眠品質好到自己都不敢相信，只是路過書店的時候，腳步還是會不自覺慢下來。"}
+  ]}),
+
 EV({id:"chain_next_door", paths:["store"], title:"隔壁開了連鎖書店",
   desc:function(p){ return "一間連鎖書店大型分店，就這樣開在"+p.name+"店面斜對面，開幕當天大排長龍。"; },
   choices:[
@@ -1504,10 +1529,23 @@ EV({id:"store_online_fork", paths:["store"], once:true,
   title:"認真考慮要不要也做電商",
   desc:function(p){ return "拍照比價的顧客見多了，"+p.name+"開始認真想：與其一直討厭這個行為，不如也開一個自己的網路小店試試。"; },
   choices:[
-    {label:"開一個自己的網路小店，順便賣選品", delta:{money:-8, a:3, fame:3}, style:"bold",
+    {label:"開一個自己的網路小店，順便賣選品", delta:{money:-8, a:3, fame:3}, style:"bold", flag:"onlineStore",
       result:"網路小店慢慢養出了自己的客群，那些拍照比價的顧客，好歹有一部分回頭跟自己買了。"},
     {label:"堅持只做實體店的體驗，不跟", delta:{d:2, a:2}, style:"safe",
       result:"沒有跟風做電商，把心力都留在店裡的選書和陳列上，這份堅持依然有人買單。"}
+  ]}),
+
+EV({id:"store_online_deepen", paths:["store"], stageMin:4, once:true,
+  requires:function(p){ return p.flags.onlineStore && !p.flags.sellingStore; },
+  title:"網路店做起來了，要不要收掉實體店",
+  desc:function(p){ return "網路店的訂單愈來愈穩定，甚至比實體店的來客還多，"+p.name+"開始認真想：要不要乾脆收掉店面，把所有心力都放到線上。"; },
+  choices:[
+    {label:"收掉實體店，全職做線上選書顧問", delta:{money:15, fame:8, d:-5}, style:"bold", flag:"onlineOnlyPivot",
+      result:"收店那天比想像中平靜，訂單沒有少，只是再也沒有客人能親手翻到那本被自己藏在角落的好書了。"},
+    {label:"維持雙軌經營，線上線下都不放", delta:{money:5, d:-6}, style:"bold",
+      result:"兩邊都顧的日子確實比較累，但也確實比較踏實——店還在，訂單也還在。"},
+    {label:"縮小實體店規模，改成預約制的選書工作室", delta:{money:-3, fame:5, a:4}, style:"safe", flag:"boutiqueStudio",
+      result:"店變小了，但每個上門的客人都是專程來聊書的，這種精緻感是量大的網路店給不了的。"}
   ]}),
 
 EV({id:"no_creativity", paths:["store"], weight:1.3, repeat:true,
@@ -1976,7 +2014,9 @@ var TAGS = [
   {label:"為工作分過手", test:function(){ return !!S.flags.brokeUp; }},
   {label:"單身到底", test:function(){ return !S.flags.dating && (S.ending.tag==="good"||S.ending.tag==="great"); }},
   {label:"自立門戶", test:function(){ return !!S.flags.foundedPress; }},
-  {label:"跳槽老手", test:function(){ return !!S.flags.jumped; }}
+  {label:"跳槽老手", test:function(){ return !!S.flags.jumped; }},
+  {label:"急流勇退", test:function(){ return !!S.flags.sellingStore; }},
+  {label:"轉戰電商", test:function(){ return !!S.flags.onlineStore; }}
 ];
 
 /* ---------- 特質系統：由行為模式解鎖，永久改變後續機制 ---------- */
@@ -2228,6 +2268,26 @@ function translatorEnding(){
 
 function storeEnding(){
   var s=S.stats;
+  if(S.flags.retailManager){
+    return {tag:"good", title:"轉戰連鎖書店的店長",
+      text:S.name+"在連鎖書店的制服裡，找到了另一種顧書的方式。少了自己當老闆的自由，但月底薪水準時入帳，這種安穩，也是這些年少有的奢侈。"};
+  }
+  if(S.flags.bookConsultant){
+    return {tag:"good", title:"獨立書店界的選書顧問",
+      text:S.name+"把自己開店的血淚，變成了一份份選書顧問報告。沒有自己的店面了，但業界都知道，找他談選書準沒錯。"};
+  }
+  if(S.flags.leftBookIndustry){
+    return {tag:"neutral", title:"轉身離開的書店老闆",
+      text:S.name+"徹底離開了這一行，書架上的書慢慢換成別的東西。偶爾路過書店，還是會忍不住多看兩眼，但那份鄉愁，僅止於此。"};
+  }
+  if(S.flags.onlineOnlyPivot){
+    return {tag:"good", title:"全職經營的線上選書店",
+      text:S.name+"的網路選書店做得有聲有色，訂單來自全台各地。少了實體店的溫度，卻也多了一種再也不用管房租漲跌的自由。"};
+  }
+  if(S.flags.boutiqueStudio){
+    return {tag:"good", title:"預約制的選書工作室",
+      text:S.name+"的店變小了，卻也變得更像自己。每一位上門的客人，都是專程為了這份挑剔的品味而來。"};
+  }
   if(s.b>=58 && s.c>=55 && S.fame>=50){
     return {tag:"great", title:"全國知名的獨立書店地標",
       text:S.name+"的店成了外國媒體介紹「亞洲最美書店」名單上的常客。遊客專程來拍照，老讀者則專程來買書——"+S.name+"用品味守住了一整條街的靈魂。"};
