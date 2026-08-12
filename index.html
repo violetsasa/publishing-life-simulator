@@ -174,6 +174,9 @@ button{ font:inherit; }
   text-align:center; font-size:.7rem; letter-spacing:.06em; font-weight:700;
   color:var(--ink); padding:10px 0; border-top:1.5px dashed var(--rule); border-bottom:1.5px dashed var(--rule);
 }
+.entry.stage-summary{ border-color:var(--gold); border-width:2px; background:var(--panel2); }
+.entry.stage-summary .etitle{ color:var(--gold); }
+.stage-sales-highlight{ margin:8px 0 0; font-size:.85rem; color:var(--gold); font-weight:700; }
 
 .ftr{
   position:sticky; bottom:0; z-index:5;
@@ -470,6 +473,7 @@ function fmtDelta(p, delta){
   });
   if(delta.money) out.push({label:"財力", val:delta.money, unit:"萬"});
   if(delta.fame) out.push({label:"知名度", val:delta.fame});
+  if(delta.sales) out.push({label:"銷量", val:delta.sales, unit:"萬冊"});
   return out;
 }
 function applyDelta(p, delta){
@@ -484,6 +488,7 @@ function applyDelta(p, delta){
     p.money += m;
   }
   if(delta.fame) p.fame = clamp(p.fame+(delta.fame||0),0,100);
+  if(delta.sales) p.salesTally = Math.max(0, (p.salesTally||0)+delta.sales);
 }
 
 /* ---------- narrative helpers (used inside EVENTS, so declared early) ---------- */
@@ -528,7 +533,7 @@ EV({id:"health_crisis_fork", once:true,
     {label:"先拖著，忙完這一波再說", style:"bold",
       chance:function(p){ return clamp(0.3+p.stats.d/200, 0.2, 0.55); },
       success:{delta:{d:5}, result:"拖過去了，這次算是僥倖，身體暫時沒找麻煩。"},
-      fail:{delta:{d:-15, money:-10}, result:"沒能拖過去，一次掛急診把省下的時間全部連本帶利討了回去。"}}
+      fail:{delta:{d:-15, money:-10}, flag:"hadHealthEmergency", result:"沒能拖過去，一次掛急診把省下的時間全部連本帶利討了回去。"}}
   ]}),
 
 EV({id:"ai_wave", once:true, stageMin:2,
@@ -716,6 +721,22 @@ EV({id:"photo_rights", paths:["author"], title:"沒簽授權的那張照片",
       fail:{delta:{fame:-14, money:-20}, result:"還是被發現了，而且是在最壞的時機點——鬧上新聞，和解金也少不了。"}}
   ]}),
 
+EV({id:"editor_bestseller_bet", paths:["editor"], stageMin:2, once:true,
+  requires:function(p){ return p.stats.b>=30; },
+  title:"力排眾議簽下的一本書",
+  desc:function(p){ return p.name+"力排眾議，簽下一本業務部普遍不看好的書，賭這本書會紅。"; },
+  choices:[
+    {label:"全力投入資源主推這本書", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.b/150, 0.2, 0.65); },
+      success:{delta:{fame:20, money:25, sales:50}, flag:"editorMegaHit",
+        result:"這本書真的紅了，紅到連當初唱衰的業務部，都搶著把它排進下一季的重點書單。"},
+      fail:{delta:{money:-15, d:-4}, result:"賭注沒有賭對，這本書的銷量印證了業務部原本的判斷，這陣子在會議室裡特別安靜。"}},
+    {label:"維持正常規格出版，不加碼賭", delta:{money:3}, style:"safe",
+      result:"照正常規格出版，成績中規中矩，至少沒有多冒什麼風險。"},
+    {label:"找外部行銷顧問合作衝一波", delta:{money:-10, fame:6, c:4}, style:"safe",
+      result:"外部顧問的操作確實帶來一波話題，只是這筆預算，公司內部之後被拿出來討論了很久。"}
+  ]}),
+
 EV({id:"celeb_memoir", paths:["editor"], stageMin:2, weight:0.6,
   title:"一萬美金簽下的名人自傳",
   desc:function(p){ return p.name+"力排眾議，砸下一萬美金預付金，簽下一位美國名人的自傳合作案。合約墨水未乾的隔天，對方就被爆出捲入一樁駭人聽聞的私人島嶼醜聞。"; },
@@ -734,6 +755,38 @@ EV({id:"overseas_offer", paths:["author"], stageMin:2,
       result:"條件談得漂亮，這份授權合約後來成了履歷上很好看的一行字。"},
     {label:"自己土法煉鋼回信，怕搞砸細節", delta:{fame:4, d:-3}, style:"bold",
       result:"自己摸索著把合約談完，過程提心吊膽，好在結果沒出大差錯。"}
+  ]}),
+
+EV({id:"author_golden_tripod", paths:["author"], stageMin:2, once:true,
+  requires:function(p){ return p.stats.a>=35; },
+  title:"入圍金鼎獎",
+  desc:function(p){ return "文化部公布金鼎獎入圍名單，"+p.name+"的作品意外出現在「文學圖書獎」的候選名單裡。"; },
+  choices:[
+    {label:"全心準備，賭一次真的得獎", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.a/150, 0.2, 0.65); },
+      success:{delta:{fame:14, money:10, sales:20}, flag:"wonGoldenTripod",
+        result:"典禮上聽到自己的名字被念出來的那一刻，這些年伏案的畫面全部湧上來。"},
+      fail:{delta:{fame:4}, result:"最後沒能得獎，但入圍名單本身，已經是這些年很扎實的一份肯定。"}},
+    {label:"隨緣看待，不特別造勢", delta:{d:3, fame:2}, style:"safe",
+      result:"平常心以待，日子照常過，這份入圍本身已經是一種安慰。"},
+    {label:"受訪時直言得獎與否不影響創作", delta:{fame:-2, a:4}, style:"bold",
+      result:"這番發言被部分人解讀成酸葡萄，卻也讓一些讀者更欣賞這種淡然。"}
+  ]}),
+
+EV({id:"author_intl_award", paths:["author"], stageMin:3, once:true,
+  requires:function(p){ return p.flags.wonGoldenTripod; },
+  title:"海外出版社注意到得獎消息",
+  desc:function(p){ return "金鼎獎的消息傳到海外，一家美國出版社主動聯繫"+p.name+"，想討論角逐美國國家書卷獎（National Book Award）的可能性。"; },
+  choices:[
+    {label:"全力配合翻譯與宣傳，賭一次國際獎項", style:"bold",
+      chance:function(p){ return clamp(0.25+p.stats.a/200+p.fame/300, 0.15, 0.55); },
+      success:{delta:{fame:25, money:30, sales:60}, flag:"wonInternationalAward",
+        result:"得獎名單公布的那個凌晨，信箱瞬間湧入來自世界各地的邀約信。"},
+      fail:{delta:{fame:10, money:5}, result:"最後沒能得獎，但這份國際關注，還是帶來了不少海外讀者。"}},
+    {label:"婉拒，怕海外操作耗費太多心力", delta:{d:4, money:5}, style:"safe",
+      result:"婉拒之後日子照常，只是偶爾會想像，如果去了會是什麼光景。"},
+    {label:"找專業版權經紀人代為處理", delta:{money:-10, c:5, fame:5}, style:"safe",
+      result:"委託經紀人處理後，過程輕鬆不少，只是這份專業服務費也不便宜。"}
   ]}),
 
 EV({id:"nobel_rumor", paths:["author"], stageMin:3, weight:0.5,
@@ -1096,6 +1149,22 @@ EV({id:"ad_burn", paths:["marketing"], repeat:true, stageMin:2, title:"廣告投
       fail:{delta:{money:-16, fame:-4}, result:"燒到最後數字依然難看，這筆預算變成了一個內部笑話。"}}
   ]}),
 
+EV({id:"marketing_cannes", paths:["marketing"], stageMin:2, once:true,
+  requires:function(p){ return p.stats.b>=30; },
+  title:"行銷案意外入圍坎城國際創意節",
+  desc:function(p){ return p.name+"發想的一個行銷企劃，被提名角逐坎城國際創意節（Cannes Lions）——這是廣告行銷圈公認最高榮耀的舞台。"; },
+  choices:[
+    {label:"全力準備參賽資料，賭一次真的得獎", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.b/150, 0.2, 0.65); },
+      success:{delta:{fame:22, money:20, sales:40}, flag:"wonCannesLions",
+        result:"得獎名單念出案名的那一刻，才真正相信，這個曾經被業務部質疑的企劃，是玩真的。"},
+      fail:{delta:{fame:8}, result:"最後沒能得獎，但能站上這個舞台角逐，本身已經是履歷上很好看的一行字。"}},
+    {label:"隨緣，交給評審決定", delta:{d:3, fame:2}, style:"safe",
+      result:"平常心交給評審決定，日子照常過，這份入圍本身已經是一種肯定。"},
+    {label:"找同業合作衝刺參賽作品品質", delta:{money:-8, c:5, b:3}, style:"safe",
+      result:"跟同業合作打磨參賽作品，過程學到不少，只是這份人情，往後大概要找機會還。"}
+  ]}),
+
 EV({id:"campaign_hit", paths:["marketing"], stageMin:2, title:"意外做出年度話題企劃",
   desc:function(p){ return p.name+"隨手發想的一個小企劃，被總編轉發後意外成為全年討論度最高的行銷案例。"; },
   choices:[
@@ -1265,6 +1334,38 @@ EV({id:"vanish_temptation", paths:["translator"], weight:1.2, repeat:true,
       result:"手機關機的那三天，成了業界口中又一個「消失的譯者」。"}
   ]}),
 
+EV({id:"translator_liang_award", paths:["translator"], stageMin:2, once:true,
+  requires:function(p){ return p.stats.b>=35; },
+  title:"入圍梁實秋文學獎",
+  desc:function(p){ return "梁實秋文學獎公布入圍名單，"+p.name+"翻譯的作品意外出現在「翻譯類」的候選名單裡。"; },
+  choices:[
+    {label:"全心準備，賭一次真的得獎", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.b/150, 0.2, 0.65); },
+      success:{delta:{fame:14, money:10, sales:15}, flag:"wonLiangAward",
+        result:"得獎的消息傳來時，第一個念頭是：終於有一次，名字被念在作者前面。"},
+      fail:{delta:{fame:4}, result:"最後沒能得獎，但入圍本身，已經是翻譯這行少有的被看見時刻。"}},
+    {label:"隨緣看待，不特別造勢", delta:{d:3, fame:2}, style:"safe",
+      result:"平常心以待，日子照常過，這份入圍本身已經是一種安慰。"},
+    {label:"婉拒領獎典禮，怕曝光打亂接案步調", delta:{fame:-2, d:3}, style:"bold",
+      result:"婉拒出席讓步調維持原樣，只是這個決定，後來想起偶爾還是有點可惜。"}
+  ]}),
+
+EV({id:"translator_booker", paths:["translator"], stageMin:3, once:true,
+  requires:function(p){ return p.flags.wonLiangAward; },
+  title:"原作者來信：國際布克獎入圍了",
+  desc:function(p){ return "原作者一封信寄來：「我們的書，一起入圍了國際布克獎（International Booker Prize）決選名單。」——這個獎項少見地把譯者的名字，跟作者並列在同一份榮耀上。"; },
+  choices:[
+    {label:"飛去領獎現場，賭一次真的得獎", style:"bold",
+      chance:function(p){ return clamp(0.25+p.stats.b/200+p.fame/300, 0.15, 0.55); },
+      success:{delta:{fame:25, money:30, sales:55}, flag:"wonBooker",
+        result:"獎落自己手上的那一刻，台下鏡頭第一次真正對準了「譯者」這兩個字。"},
+      fail:{delta:{fame:10, money:5}, result:"最後沒能得獎，但站上那個舞台本身，已經是翻譯生涯最亮的一晚。"}},
+    {label:"婉拒出席，怕耽誤手上稿子", delta:{d:4, money:5}, style:"safe",
+      result:"婉拒之後日子照常，只是偶爾會想像，如果去了會是什麼光景。"},
+    {label:"委託版權窗口代為處理後續", delta:{money:-8, c:5, fame:5}, style:"safe",
+      result:"委託窗口處理後續，過程輕鬆不少，只是這份專業服務費也不便宜。"}
+  ]}),
+
 EV({id:"rate_haggle", paths:["translator"], repeat:true, title:"十年沒漲過的翻譯費",
   desc:function(p){ return stale("十年沒漲過的翻譯費", [
     "出版社開出的千字翻譯費，"+p.name+"一算，居然跟十年前學生時代接的案子一樣。",
@@ -1425,6 +1526,22 @@ EV({id:"store_pivot", paths:["store"], once:true,
       result:"改造後的空間意外吸引了一批願意坐下來慢慢待的客人，價格戰突然不再是唯一的戰場。"},
     {label:"維持現狀，靠老客戶撐著", delta:{d:2}, style:"safe",
       result:"沒有大動作，靠著熟客的支持繼續撐著，日子照舊，只是那個轉型的念頭偶爾還是會冒出來。"}
+  ]}),
+
+EV({id:"store_world_feature", paths:["store"], stageMin:2, once:true,
+  requires:function(p){ return p.stats.a>=30; },
+  title:"國際媒體來信，想拍店裡的樣子",
+  desc:function(p){ return "一家國際媒體正在製作「全球最美書店」的專題報導，來信詢問能不能來"+p.name+"的店取景拍攝。"; },
+  choices:[
+    {label:"全力配合，重新佈置店面迎接拍攝", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.a/150, 0.2, 0.65); },
+      success:{delta:{fame:22, money:15, sales:40}, flag:"worldFeaturedStore",
+        result:"報導刊出那天，訊息多到一整天沒空整理書架，全都在回覆遠道而來的訊息。"},
+      fail:{delta:{fame:6}, result:"拍攝很順利，只是最後專題選了別間店，這次沒能上榜。"}},
+    {label:"婉拒，怕打擾平常營運", delta:{d:3}, style:"safe",
+      result:"婉拒之後日子照常，只是偶爾會想像，如果答應了會是什麼光景。"},
+    {label:"答應但保持店面原樣，不特別佈置", delta:{fame:8, a:3}, style:"safe",
+      result:"沒有特別佈置，報導拍出來的是最真實的日常樣貌，反而有一批讀者特別欣賞這份不做作。"}
   ]}),
 
 EV({id:"landmark", paths:["store"], stageMin:2, title:"意外爆紅的打卡地標",
@@ -1724,11 +1841,42 @@ function newGame(name, pathKey, background){
     hadNegativeMoneyEarly:false,
     rngCalls:0,
     company:null,
-    pendingChoiceOrder:null
+    pendingChoiceOrder:null,
+    salesTally:0,
+    stageStartSnapshot:null
   };
   setSeed(S.seed);
   if(pathKey==="editor" || pathKey==="marketing"){ S.company = pick(COMPANIES); }
+  snapshotStage();
   startYear();
+}
+function snapshotStage(){
+  S.stageStartSnapshot = {
+    stats:{a:S.stats.a,b:S.stats.b,c:S.stats.c,d:S.stats.d,e:S.stats.e},
+    money:S.money, fame:S.fame, sales:S.salesTally
+  };
+}
+function stageSummaryHTML(finishedStage){
+  var snap = S.stageStartSnapshot;
+  if(!snap) return "";
+  var order = PATHS[S.path].order, labels = PATHS[S.path].labels;
+  var parts = [];
+  order.forEach(function(k){
+    var diff = S.stats[k]-snap.stats[k];
+    if(diff!==0) parts.push('<span class="'+(diff>0?"pos":"neg")+'">'+esc(labels[k])+' '+(diff>0?"+":"")+diff+'</span>');
+  });
+  var moneyDiff = S.money-snap.money;
+  if(moneyDiff!==0) parts.push('<span class="'+(moneyDiff>0?"pos":"neg")+'">財力 '+(moneyDiff>0?"+":"")+moneyDiff+'萬</span>');
+  var fameDiff = S.fame-snap.fame;
+  if(fameDiff!==0) parts.push('<span class="'+(fameDiff>0?"pos":"neg")+'">知名度 '+(fameDiff>0?"+":"")+fameDiff+'</span>');
+  var salesDiff = S.salesTally-snap.sales;
+  var salesLine = salesDiff>0
+    ? '<p class="stage-sales-highlight">這個階段賣出了 '+salesDiff+' 萬冊，業界都在討論這個數字。</p>'
+    : "";
+  return '<div class="entry stage-summary"><div class="etitle">'+esc(finishedStage.label)+' 結算</div>'+
+    (parts.length ? '<div class="delta">'+parts.join("")+'</div>' : '<p style="color:var(--dim);font-size:.85rem;margin:0;">這個階段沒有太大的起伏。</p>')+
+    salesLine+
+    '</div>';
 }
 
 /* ---------- turn engine: 1 year = alloc once + EVENTS_PER_YEAR events (年初/仲春/盛夏/歲末) ---------- */
@@ -1919,7 +2067,9 @@ function afterYear(){
     S.turnInStage=0;
     if(S.stageIdx>=STAGES.length){ computeEnding(); return; }
     var nextStage = STAGES[S.stageIdx];
+    S.entries.push(stageSummaryHTML(finishedStage));
     S.entries.push('<div class="stagebreak">'+finishedStage.label+' 結束　·　邁入 '+nextStage.label+'</div>');
+    snapshotStage();
     S.phase="stageend";
     render(true);
     return;
@@ -2137,6 +2287,7 @@ function crushedEnding(){
 }
 
 function burnoutEnding(){
+  if(S.flags.hadHealthEmergency) return suddenDeathEnding();
   var lines = {
     author:S.name+"在又一次熬夜趕稿後，直接被家人送急診。醫生只說了一句：「你的身體已經不聽你的了。」躺在病床上，"+S.name+"第一次認真想，這些年是不是把命都寫進了稿子裡。",
     editor:S.name+"在核稿到一半時，直接昏倒在辦公桌前。醒來時人在醫院，主管傳來訊息：「好好休息，書不會跑掉的」——這句話"+S.name+"覺得晚了十年。",
@@ -2145,13 +2296,38 @@ function burnoutEnding(){
     store:S.name+"某天開店前，在後巷直接暈倒，被熟客發現送醫。醒來後，"+S.name+"看著病床天花板，第一次覺得那盞店裡從不熄的燈，或許該熄一下了。"
   };
   return {
-    tag:"bad", title:"過勞倒下",
+    tag:"bad", title:"慢性重病退場",
     text:(lines[S.path]||lines.editor)+" 這一行沒有工傷保險能填補的，是被熬乾的那部分自己。"
+  };
+}
+function suddenDeathEnding(){
+  var lines = {
+    author:S.name+"其實早就收到過警訊——那次紅字報告、那次差點掛急診。這次沒能再拖過去，"+S.name+"倒在書桌前，最後一份手稿還停在游標閃爍的地方。",
+    editor:S.name+"其實早就收到過警訊，只是那次拖過去了，這次沒有。同事發現"+S.name+"倒在辦公桌前時，電腦螢幕上還開著一份沒改完的稿子。",
+    marketing:S.name+"其實早就收到過警訊，那次僥倖拖過去，讓人以為身體還撐得住。這次沒有僥倖，"+S.name+"倒在會議室，手機還震著下一場提案的通知。",
+    translator:S.name+"其實早就收到過警訊，那次死線壓過去之後就沒再認真休息過。這次沒能再拖過去，稿子停在譯到一半的那一句。",
+    store:S.name+"其實早就收到過警訊，那次拖著沒去複診。這次沒有僥倖，"+S.name+"倒在店裡，那盞從不熄的燈，這次真的熄了。"
+  };
+  return {
+    tag:"bad", title:"猝死",
+    text:(lines[S.path]||lines.editor)+" 早就給過的警訊，這次沒能再被忽略過去。"
   };
 }
 
 function authorEnding(){
   var s=S.stats;
+  if(S.salesTally>=40){
+    if(S.flags.wonInternationalAward){
+      return {tag:"great", title:"國際文壇的常勝軍",
+        text:S.name+"從金鼎獎一路打到美國國家書卷獎的決選台上，手稿被譯成十幾種語言熱銷。當年那個在截稿夜裡懷疑自己的無名作者，如今成了出版社搶著回信的對象。"};
+    }
+    if(S.flags.wonGoldenTripod){
+      return {tag:"great", title:"金鼎獎得主的暢銷傳奇",
+        text:S.name+"那本原本沒人看好的書，靠著金鼎獎的光環一路衝上暢銷榜。書店的平台桌，很長一段時間都留著這本書的位置。"};
+    }
+    return {tag:"great", title:"意外爆紅的暢銷作家",
+      text:S.name+"沒料到自己的書會賣成這樣，訂單多到出版社連夜加印。這種爆紅有點不真實，但銀行帳戶很誠實地相信了。"};
+  }
   if(s.a>=70 && S.fame>=55 && s.e>=45){
     return {tag:"great", title:"諾貝爾文學獎與國外授權",
       text:S.name+"站上斯德哥爾摩的講台，手稿被譯成十七種語言。當年那個在截稿夜裡懷疑自己的無名作者，如今成了教科書上的一個章節。全世界的出版社，現在搶著回"+S.name+"的信。"};
@@ -2178,6 +2354,10 @@ function authorEnding(){
 
 function editorEnding(){
   var s=S.stats;
+  if(S.salesTally>=40 && S.flags.editorMegaHit){
+    return {tag:"great", title:"締造銷售奇蹟的金牌編輯",
+      text:S.name+"力排眾議簽下的那本書，成了整個業界那一年最常被提起的案例。當初唱衰的人，後來都在慶功宴上搶著跟"+S.name+"合照。"};
+  }
   if(S.flags.foundedPress){
     if(s.b>=68 && s.c>=58 && S.fame>=42){
       return {tag:"great", title:"創辦獨立出版社的傳奇總編",
@@ -2212,6 +2392,10 @@ function editorEnding(){
 
 function marketingEnding(){
   var s=S.stats;
+  if(S.salesTally>=40 && S.flags.wonCannesLions){
+    return {tag:"great", title:"坎城國際創意節得主",
+      text:S.name+"當年那個被業務部質疑的企劃，站上了坎城的頒獎台。得獎名單念出案名的那一刻，"+S.name+"才真正相信，這一行的瘋狂執念，偶爾真的會被世界看見。"};
+  }
   if(S.flags.foundedPress){
     if(s.b>=65 && s.c>=58 && S.fame>=52){
       return {tag:"great", title:"業界傳奇操盤手",
@@ -2246,6 +2430,18 @@ function marketingEnding(){
 
 function translatorEnding(){
   var s=S.stats;
+  if(S.salesTally>=40){
+    if(S.flags.wonBooker){
+      return {tag:"great", title:"國際布克獎得主",
+        text:S.name+"從梁實秋文學獎一路打進國際布克獎的決選台，鏡頭第一次真正對準了「譯者」這兩個字。長年隱形的名字，終於被念了出來，還跟作者並列在同一份獎座上。"};
+    }
+    if(S.flags.wonLiangAward){
+      return {tag:"great", title:"梁實秋文學獎得主的接案生涯",
+        text:S.name+"那座梁實秋文學獎的獎座，成了往後每次接案時最有份量的一句話。編輯開口的語氣都不一樣了。"};
+    }
+    return {tag:"great", title:"意外爆紅的譯者",
+      text:S.name+"翻譯的那本書意外賣到嚇人，讀者第一次開始在乎「這是誰翻的」，長年隱形的名字，終於被記住了。"};
+  }
   if(s.a>=68 && s.b>=64 && S.fame>=42){
     return {tag:"great", title:"讓原作者親自道謝的譯者",
       text:S.name+"翻譯的作品拿下國際翻譯獎，原作者在得獎感言裡特別提到「沒有這個譯本，我的書到不了這裡」。長年隱形的名字，終於被念了出來。"};
@@ -2287,6 +2483,10 @@ function storeEnding(){
   if(S.flags.boutiqueStudio){
     return {tag:"good", title:"預約制的選書工作室",
       text:S.name+"的店變小了，卻也變得更像自己。每一位上門的客人，都是專程為了這份挑剔的品味而來。"};
+  }
+  if(S.salesTally>=40 && S.flags.worldFeaturedStore){
+    return {tag:"great", title:"登上國際媒體的書店地標",
+      text:S.name+"的店被國際媒體選進「全球最美書店」專題，報導刊出那天，訊息多到"+S.name+"一整天沒空整理書架。這條巷子，從此多了一個外國遊客也認得的地標。"};
   }
   if(s.b>=58 && s.c>=55 && S.fame>=50){
     return {tag:"great", title:"全國知名的獨立書店地標",
