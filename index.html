@@ -435,7 +435,8 @@ var STAGES = [
   {key:"peak", label:"巔峰期", turns:4},
   {key:"decline", label:"衰退期", turns:3}
 ];
-var BEAT_LABELS = ["年初","年中","年末"];
+var EVENTS_PER_YEAR = 3;
+var BEAT_LABELS = ["年初","仲春","盛夏","歲末"];
 
 var TICKERS = [
   "產業快訊：實體書店家數連續第五年下滑，業者稱「早就習慣了」。",
@@ -450,6 +451,13 @@ var TICKERS = [
   "產業快訊：某出版社老闆受訪表示「我們就是一群愛書的傻子」，員工薪資單沉默。",
   "產業快訊：紙價再度調漲，印刷廠老闆嘆氣的分貝也調漲。",
   "產業快訊：某書店貓過世，全國哀悼聲量大於多數新書上市。"
+];
+
+/* 虛構出版社名字（純惡搞諧音，非真實公司）：編輯／行銷路線的「任職公司」，會記進生涯記事 */
+var COMPANIES = [
+  "中杯出版","月刊出版","分緯出版","皇冕文化","近流出版","地下文化",
+  "方神出版","五彩文化","悶知文化","稻田出版","鄉邦文化","竹馬文化",
+  "晨周出版","寶罐文化"
 ];
 
 /* ---------- effect helpers ---------- */
@@ -883,7 +891,7 @@ EV({id:"headhunted", paths:["editor"], stageMin:3, once:true,
   title:"獵頭找上門",
   desc:function(p){ return "一位獵頭主動聯絡"+p.name+"，開出的職級和薪水都比現職漂亮不少，只是要從頭適應一個新團隊。"; },
   choices:[
-    {label:"跳槽到對家，換一個更高的位置", delta:{money:10, fame:4, c:-4}, style:"bold", flag:"jumped",
+    {label:"跳槽到對家，換一個更高的位置", delta:{money:10, fame:4, c:-4}, style:"bold", flag:"jumped", newCompany:true,
       result:"新位置確實風光，但重新累積信任的過程，比想像中磨人。"},
     {label:"留下來，繼續在熟悉的地方熬資歷", delta:{d:3, c:2}, style:"safe",
       result:"留下來的決定沒有大起伏，只是那個更高的位置，後來想起時偶爾會想「如果當初」。"}
@@ -895,6 +903,7 @@ EV({id:"going_solo", paths:["editor"], stageMin:3, once:true,
   desc:function(p){ return "跳過槽、也看過幾間公司的內部運作之後，"+p.name+"開始認真盤算：自己出來開一間工作室型出版社，是不是可行。"; },
   choices:[
     {label:"拿出積蓄，開一間屬於自己的出版社", delta:{money:-20, fame:6, d:-4}, style:"bold", flag:"foundedPress",
+      newCompany:function(p){ return p.name+"工作室"; },
       result:"創業初期忙到沒有假日，但書架上終於出現了自己說了算的書單。"},
     {label:"再穩紮穩打幾年，先把積蓄存夠", delta:{money:5}, style:"safe",
       result:"這個念頭先收進口袋，日子照常過，只是心裡那顆種子沒有真的消失。"}
@@ -1475,13 +1484,15 @@ function newGame(name, pathKey, background){
     allocFocusKey:null,
     allocFocusStreak:0,
     hadNegativeMoneyEarly:false,
-    rngCalls:0
+    rngCalls:0,
+    company:null
   };
   setSeed(S.seed);
+  if(pathKey==="editor" || pathKey==="marketing"){ S.company = pick(COMPANIES); }
   startYear();
 }
 
-/* ---------- turn engine: 1 year = alloc once + 2 events (年初/年中/年末) ---------- */
+/* ---------- turn engine: 1 year = alloc once + EVENTS_PER_YEAR events (年初/仲春/盛夏/歲末) ---------- */
 function poolForYear(){
   var stageNo = S.stageIdx+1;
   return 6 + Math.floor(rng()*3) + (stageNo>=3?1:0) + (S.traits.specialist?1:0); // 6-8(+1 late)(+1 specialist)
@@ -1494,7 +1505,7 @@ function startYear(){
   S.allocSpent = {a:0,b:0,c:0,d:0,e:0};
   if(S.stageIdx>0 || S.turnInStage>0){
     var beforeD = S.stats.d;
-    S.stats.d = clamp(S.stats.d+3, 0, 100);
+    S.stats.d = clamp(S.stats.d+5, 0, 100);
     if(S.stats.d>beforeD){
       S.entries.push('<div class="ticker"><b>年初</b><span>年假總算喘了口氣，抗壓性緩緩回升了一些。</span></div>');
     }
@@ -1584,6 +1595,7 @@ function resolveChoice(idx){
   var ev = getPendingEvent();
   var choice = ev.choices[idx];
   var branch = choice;
+  var companyAtEvent = S.company;
   var gambleTag = "";
   if(choice.success && choice.fail){
     var chance = typeof choice.chance==="function" ? choice.chance(S) : (choice.chance===undefined?0.5:choice.chance);
@@ -1602,6 +1614,16 @@ function resolveChoice(idx){
   if(choice.style){ S.styleCount[choice.style] = (S.styleCount[choice.style]||0)+1; }
   if(choice.flag) S.flags[choice.flag] = true;
   if(branch.flag) S.flags[branch.flag] = true;
+  var companyChange = choice.newCompany || branch.newCompany;
+  if(companyChange){
+    var newVal = typeof companyChange==="function" ? companyChange(S) : companyChange;
+    if(newVal===true){
+      var pool = COMPANIES.filter(function(c){ return c!==S.company; });
+      S.company = pick(pool);
+    } else {
+      S.company = newVal;
+    }
+  }
   var resultText = branch.result || genericResult(verdict.tier);
   var deltaHTML = deltaList.map(function(d){
     var cls = d.val>0?"pos":"neg"; var sign = d.val>0?"+":"";
@@ -1615,7 +1637,7 @@ function resolveChoice(idx){
     '<div class="result-text"><span class="vdot '+verdict.cls+'"></span><span class="rtxt">'+esc(resultText)+'</span></div>'+
     '<div class="delta">'+(deltaHTML||'<span style="color:var(--dim);background:none;border:none;padding:0;">（沒有明顯變化）</span>')+'</div></div>'
   );
-  S.log.push({age:S.age, title:ev.title, choice:choice.label});
+  S.log.push({age:S.age, title:ev.title, choice:choice.label, company:companyAtEvent});
   S.pendingEventId = null;
   S.phase="post";
   render(true);
@@ -1624,7 +1646,7 @@ function resolveChoice(idx){
 function continueAfterEvent(){
   S.eventsThisYear++;
   if(checkDebtCrisis()) return;
-  if(S.eventsThisYear<2){ drawEvent(); return; }
+  if(S.eventsThisYear<EVENTS_PER_YEAR){ drawEvent(); return; }
   afterYear();
 }
 
@@ -2028,7 +2050,7 @@ function headerHTML(){
   var stage = STAGES[S.stageIdx];
   return '<div class="hdr">'+
     '<div class="topline"><span class="stage-pill">'+stage.label+' · 第 '+(S.turnInStage+1)+'/'+stage.turns+' 年</span>'+
-    '<span>'+S.age+' 歲 · '+PATHS[S.path].noun+' '+esc(S.name)+' · 種子 '+esc(S.seed)+'</span></div>'+
+    '<span>'+S.age+' 歲 · '+PATHS[S.path].noun+' '+esc(S.name)+(S.company?' · '+esc(S.company):'')+' · 種子 '+esc(S.seed)+'</span></div>'+
     lampsHTML()+statBarsHTML()+
     '</div>';
 }
@@ -2189,7 +2211,9 @@ function bindStart(){
 /* ending */
 function renderEnding(){
   var e = S.ending;
-  var historyLines = S.log.map(function(l){ return l.age+' 歲　'+esc(l.title)+'　→　'+esc(l.choice); }).join("<br>");
+  var historyLines = S.log.map(function(l){
+    return l.age+' 歲　'+(l.company?esc(l.company)+'　':'')+esc(l.title)+'　→　'+esc(l.choice);
+  }).join("<br>");
   return '<div class="startpage">'+
     '<div class="ending-icon-wrap">'+icon("trophy","ending-icon")+'</div>'+
     '<span class="ending-tag '+e.tag+'">Ending</span>'+
