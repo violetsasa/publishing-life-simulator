@@ -533,8 +533,10 @@ EV({id:"lowbirth", stageMin:2,
   title:"少子化的帳，攤在眼前",
   desc:function(p){ return "出版市場年度報告出爐：讀者基數持續萎縮。"+p.name+"開會時被問「你有什麼對策」。"; },
   choices:[
-    {label:"往國際版權／海外市場找出路", delta:{c:6, money:-4}, style:"bold"},
-    {label:"深耕本地鐵粉，做小而美的路線", delta:{fame:5, d:3}, style:"safe"}
+    {label:"往國際版權／海外市場找出路", delta:{c:6, money:-4}, style:"bold",
+      result:"海外窗口是打開了，時差和翻譯成本也跟著開了一個新的坑，這條路走得比想像中慢。"},
+    {label:"深耕本地鐵粉，做小而美的路線", delta:{fame:5, d:3}, style:"safe",
+      result:"讀者名單沒有變大，但每一個都真心買單，路走得踏實，也走得比較安心。"}
   ]}),
 
 EV({id:"grant_scandal", paths:["editor","marketing","store"], stageMin:2,
@@ -551,7 +553,8 @@ EV({id:"foundation", paths:["editor","marketing"], stageMin:2,
   title:"老闆的那個基金會",
   desc:function(p){ return "小道消息傳開："+p.name+"的老闆同時掌控著一個文化基金會，補助案審核委員名單裡，一半的人跟老闆吃過飯。"; },
   choices:[
-    {label:"裝作不知道，專心做自己的事", delta:{d:2, money:3}, style:"safe"},
+    {label:"裝作不知道，專心做自己的事", delta:{d:2, money:3}, style:"safe",
+      result:"假裝不知道確實輕鬆，開會看著那份審核名單時，心裡還是難免五味雜陳。"},
     {label:"私下向朋友抱怨兩句，結果被截圖", delta:{fame:-6, c:-6}, style:"bold",
       result:"截圖流出的那天，"+"手機震到沒電，此後好一陣子都不敢多話。"}
   ]}),
@@ -580,7 +583,8 @@ EV({id:"belt_typo", title:"書腰上的錯字",
 EV({id:"language_police", title:"讀者檢討你用「支語」",
   desc:function(p){ return "文案裡一句「視頻」被讀者截圖公審，留言區吵成兩派，一派護航一派出征，"+p.name+"的通知欄瞬間爆炸。"; },
   choices:[
-    {label:"發文致歉並修正用詞", delta:{fame:-2, d:-3}, style:"safe"},
+    {label:"發文致歉並修正用詞", delta:{fame:-2, d:-3}, style:"safe",
+      result:"道歉文一發，護航派也跟著閉了嘴，代價是往後每次下筆前，都得先想一下這個詞「安不安全」。"},
     {label:"不理會，讓子彈飛一會兒", style:"bold",
       chance:function(p){ return clamp(0.4+p.stats.e/200, 0.25, 0.7); },
       success:{delta:{fame:4, c:-1}, result:"話題真的自己冷卻了，什麼都沒做反而是最有效的做法。"},
@@ -591,16 +595,20 @@ EV({id:"merger", stageMin:3,
   title:"產業傳出大型併購案",
   desc:function(p){ return "兩間指標出版集團傳出合併消息，業界人心浮動，大家私下都在打聽誰會被資遣。"; },
   choices:[
-    {label:"利用人脈打聽情報、超前部署", delta:{c:6, d:-3}, style:"bold"},
-    {label:"專心把手上的事做好，靜觀其變", delta:{d:5}, style:"safe"}
+    {label:"利用人脈打聽情報、超前部署", delta:{c:6, d:-3}, style:"bold",
+      result:"情報是打聽到了不少，聽完之後反而更睡不著，每個版本的傳言都比上一個更嚇人。"},
+    {label:"專心把手上的事做好，靜觀其變", delta:{d:5}, style:"safe",
+      result:"沒有多打聽，日子照樣過，合併案最後也沒有真的燒到自己頭上。"}
   ]}),
 
 EV({id:"friend_kol", stageMin:2,
   title:"同業好友辭職開自媒體",
   desc:function(p){ return "交情不錯的同業突然宣布離職，開了個「揭密出版業」的帳號，"+p.name+"被問要不要來當第一集嘉賓。"; },
   choices:[
-    {label:"上，藉機累積個人聲量", delta:{fame:9, c:-3}, style:"bold"},
-    {label:"婉拒，怕日後在業界難做人", delta:{c:4, fame:-1}, style:"safe"}
+    {label:"上，藉機累積個人聲量", delta:{fame:9, c:-3}, style:"bold",
+      result:"節目上得很順，聲量確實漲了一波，代價是同業之間多了一種「他是不是在配合爆料」的眼神。"},
+    {label:"婉拒，怕日後在業界難做人", delta:{c:4, fame:-1}, style:"safe",
+      result:"婉拒之後，倒是收到那位前同事私下傳來的一句：「懂，我不怪你。」"}
   ]}),
 
 /* ---------- 感情支線（三階段：認識→穩定→抉擇，狀態靠 flags 串接） ---------- */
@@ -785,8 +793,10 @@ EV({id:"fan_army", paths:["author"], stageMin:2,
   title:"書友自發出征護航",
   desc:function(p){ return "一群長期支持"+p.name+"的讀者，看到黑粉留言後自發組隊反擊，戰況激烈到上了同溫層熱門。"; },
   choices:[
-    {label:"發文感謝，順勢安撫戰場", delta:{fame:6, c:4}, style:"safe"},
-    {label:"樂觀其成，不介入", delta:{fame:3, d:2}, style:"bold"}
+    {label:"發文感謝，順勢安撫戰場", delta:{fame:6, c:4}, style:"safe",
+      result:"發文安撫之後，戰場很快降溫，這群讀者後來變成了死忠的自來水部隊。"},
+    {label:"樂觀其成，不介入", delta:{fame:3, d:2}, style:"bold",
+      result:"沒有介入，戰況自己燒完自己滅，全程樂得清閒地看戲。"}
   ]}),
 
 /* ---------- editor ---------- */
