@@ -518,6 +518,19 @@ EV({id:"health", repeat:true, title:"年度健檢通知單",
       result:"報告先塞進抽屜，"+"日子照樣往前衝，只是身體默默記下這筆帳。"}
   ]}),
 
+EV({id:"health_crisis_fork", once:true,
+  requires:function(p){ return logCount("年度健檢通知單")>=3; },
+  title:"健康亮紅燈的抉擇",
+  desc:function(p){ return "醫生這次語氣少見地嚴肅：紅字已經不只是「要注意」，是「真的要處理」。"+p.name+"拿著轉診單，站在醫院門口猶豫。"; },
+  choices:[
+    {label:"請假住院，把治療正式排進行事曆", delta:{money:-15, d:15}, style:"safe",
+      result:"這次是玩真的休息，身體回應得很誠實——請假的成本不小，但撐起來的日子明顯輕鬆了。"},
+    {label:"先拖著，忙完這一波再說", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.d/200, 0.2, 0.55); },
+      success:{delta:{d:5}, result:"拖過去了，這次算是僥倖，身體暫時沒找麻煩。"},
+      fail:{delta:{d:-15, money:-10}, result:"沒能拖過去，一次掛急診把省下的時間全部連本帶利討了回去。"}}
+  ]}),
+
 EV({id:"ai_wave", once:true, stageMin:2,
   title:"AI 浪潮打進辦公室",
   desc:function(p){ return "生成式 AI 工具席捲整個產業，同業一半在恐慌、一半在偷用。"+p.name+"要選一條路。"; },
@@ -783,6 +796,19 @@ EV({id:"delay_penalty", paths:["author"], repeat:true, title:"違約金追殺令
       result:"認賠換來喘息空間，錢包扁了一點，但至少能睡個好覺。"}
   ]}),
 
+EV({id:"author_showdown", paths:["author"], once:true,
+  requires:function(p){ return logCount("違約金追殺令")>=3; },
+  title:"跟出版社徹底攤牌",
+  desc:function(p){ return "違約金試算表已經看到麻木，"+p.name+"決定不能再這樣下去，約了主編當面談一次，把話說開。"; },
+  choices:[
+    {label:"談定更寬鬆的交稿條件，換取更長的合作", delta:{money:8, d:5}, style:"safe",
+      result:"條件談得比想像中順利，往後的交稿日總算有了喘息空間。"},
+    {label:"撕毀合約，賭一次自己單飛", style:"bold",
+      chance:function(p){ return clamp(0.3+p.fame/200, 0.2, 0.6); },
+      success:{delta:{money:-10, fame:8, a:3}, result:"賭贏了，離開這份合約後，反而寫出了最像自己的作品。"},
+      fail:{delta:{money:-20, d:-8}, result:"賭輸了，違約金一次付清，接下來好一段時間都得從頭開始建立信任。"}}
+  ]}),
+
 EV({id:"plagiarism_doubt", paths:["author"], stageMin:2,
   title:"抄襲爭議疑雲",
   desc:function(p){ return "有人在社群指出"+p.name+"某段情節「跟某部作品高度相似」，附上並排截圖，留言區迅速分成兩派。"; },
@@ -809,6 +835,17 @@ EV({id:"booksigning", paths:["author"], repeat:true,
       chance:function(p){ return clamp(0.45+p.fame/300, 0.3, 0.7); },
       success:{delta:{fame:6}, result:"結果意外不錯，現場來的人比預期多，全靠自然發酵的口碑。"},
       fail:{delta:{fame:-4}, result:"結果不如預期，現場冷冷清清，這次的「順其自然」賭輸了。"}}
+  ]}),
+
+EV({id:"booksigning_tour", paths:["author"], once:true,
+  requires:function(p){ return logCount("簽書會現場")>=3; },
+  title:"巡迴簽書會的邀約",
+  desc:function(p){ return "辦過這麼多場簽書會，"+p.name+"開始收到外縣市書店拋來的巡迴邀約，只是行程一排下去，整個月大概都不用想寫稿了。"; },
+  choices:[
+    {label:"接下巡迴，把曝光度衝到最高", delta:{fame:10, a:-4, d:-6}, style:"bold",
+      result:"巡迴跑下來聲量確實衝高了，只是回到書桌前，好一陣子提不起筆。"},
+    {label:"婉拒，把時間留給下一本書", delta:{a:4, d:2}, style:"safe",
+      result:"婉拒了曝光的機會，換來的是安靜寫作的時間，這筆帳划不划算，只有自己知道。"}
   ]}),
 
 EV({id:"fan_army", paths:["author"], stageMin:2,
@@ -849,7 +886,7 @@ EV({id:"advance_overshoot", paths:["editor"], title:"手滑核准的預付版稅
       result:"賭注沒有全輸，書的討論度確實起來了，只是財報上那個數字很難看。"}
   ]}),
 
-EV({id:"boss_pressure", paths:["editor"], repeat:true, stageMin:2, title:"主管的不合理要求",
+EV({id:"boss_pressure", paths:["editor","marketing"], repeat:true, stageMin:2, title:"主管的不合理要求",
   desc:function(p){ return stale("主管的不合理要求", [
     "主管要求"+p.name+"去「側面了解」某位作者的私生活八卦，理由是「公關風險評估」。",
     "主管這次的要求更露骨了，"+p.name+"開始懷疑這份工作的邊界到底在哪裡。",
@@ -862,7 +899,7 @@ EV({id:"boss_pressure", paths:["editor"], repeat:true, stageMin:2, title:"主管
       result:"應付過去了，"+"心裡卻一直有種說不上來的不舒服。"}
   ]}),
 
-EV({id:"editor_fed_up", paths:["editor"], once:true,
+EV({id:"editor_fed_up", paths:["editor","marketing"], once:true,
   requires:function(p){ return logCount("主管的不合理要求")>=3 && !p.flags.jobHunting && !p.flags.jumped && !p.flags.foundedPress; },
   title:"受夠了，開始物色新東家",
   desc:function(p){ return "類似的要求已經不是第一次了，"+p.name+"終於受夠，開始不動聲色地在人力銀行上更新履歷。"; },
@@ -902,7 +939,7 @@ EV({id:"public_called_out", paths:["editor"], title:"被作者公開點名開嗆
       result:"聲明一發，戰火反而燒得更旺，這件事在業界流傳了好一陣子。"}
   ]}),
 
-EV({id:"layoffs", paths:["editor"], stageMin:2, title:"裁員潮",
+EV({id:"layoffs", paths:["editor","marketing"], stageMin:2, title:"裁員潮",
   desc:function(p){ return "公司宣布組織重整，"+p.name+"的部門被點名「效益檢討」，會議室的燈那天特別亮。"; },
   choices:[
     {label:"主動提出貢獻報告、爭取留下", delta:{d:-5, b:4}, style:"bold",
@@ -911,7 +948,7 @@ EV({id:"layoffs", paths:["editor"], stageMin:2, title:"裁員潮",
       result:"履歷投出去後心裡踏實不少，至少手上多留了一條退路。"}
   ]}),
 
-EV({id:"headhunted", paths:["editor"], stageMin:3, once:true,
+EV({id:"headhunted", paths:["editor","marketing"], stageMin:3, once:true, weight:2.5,
   requires:function(p){ return p.flags.jobHunting && !p.flags.jumped && !p.flags.foundedPress; },
   title:"獵頭找上門",
   desc:function(p){ return "一位獵頭主動聯絡"+p.name+"，開出的職級和薪水都比現職漂亮不少，只是要從頭適應一個新團隊。"; },
@@ -922,7 +959,7 @@ EV({id:"headhunted", paths:["editor"], stageMin:3, once:true,
       result:"留下來的決定沒有大起伏，只是那個更高的位置，後來想起時偶爾會想「如果當初」。"}
   ]}),
 
-EV({id:"going_solo", paths:["editor"], stageMin:3, once:true,
+EV({id:"going_solo", paths:["editor"], stageMin:3, once:true, weight:2.5,
   requires:function(p){ return p.flags.jumped && !p.flags.foundedPress; },
   title:"自立門戶的念頭",
   desc:function(p){ return "跳過槽、也看過幾間公司的內部運作之後，"+p.name+"開始認真盤算：自己出來開一間工作室型出版社，是不是可行。"; },
@@ -930,6 +967,18 @@ EV({id:"going_solo", paths:["editor"], stageMin:3, once:true,
     {label:"拿出積蓄，開一間屬於自己的出版社", delta:{money:-20, fame:6, d:-4}, style:"bold", flag:"foundedPress",
       newCompany:function(p){ return p.name+"工作室"; },
       result:"創業初期忙到沒有假日，但書架上終於出現了自己說了算的書單。"},
+    {label:"再穩紮穩打幾年，先把積蓄存夠", delta:{money:5}, style:"safe",
+      result:"這個念頭先收進口袋，日子照常過，只是心裡那顆種子沒有真的消失。"}
+  ]}),
+
+EV({id:"marketing_going_solo", paths:["marketing"], stageMin:3, once:true, weight:2.5,
+  requires:function(p){ return p.flags.jumped && !p.flags.foundedPress; },
+  title:"自立門戶的念頭",
+  desc:function(p){ return "跳過槽、也看過幾間公司怎麼談案子之後，"+p.name+"開始認真盤算：自己出來開一間行銷工作室接案，是不是可行。"; },
+  choices:[
+    {label:"拿出積蓄，開一間屬於自己的行銷工作室", delta:{money:-20, fame:6, d:-4}, style:"bold", flag:"foundedPress",
+      newCompany:function(p){ return p.name+"工作室"; },
+      result:"創業初期忙到沒有假日，但接的每個案子，終於都是自己想做的案子。"},
     {label:"再穩紮穩打幾年，先把積蓄存夠", delta:{money:5}, style:"safe",
       result:"這個念頭先收進口袋，日子照常過，只是心裡那顆種子沒有真的消失。"}
   ]}),
@@ -1082,6 +1131,19 @@ EV({id:"algorithm_change", paths:["marketing"], repeat:true, stageMin:2,
       result:"花錢買到的觸及來得快，效果卻也跟著預算一起見底。"}
   ]}),
 
+EV({id:"algorithm_give_up", paths:["marketing"], once:true,
+  requires:function(p){ return logCount("演算法一夜大改")>=3; },
+  title:"放棄追演算法，轉向別的戰場",
+  desc:function(p){ return "演算法改了又改，"+p.name+"開始懷疑追著它跑到底有沒有意義，也許該把力氣花在別的地方。"; },
+  choices:[
+    {label:"轉攻線下活動跟實體口碑", delta:{c:6, money:-6}, style:"safe",
+      result:"線下活動的效果比想像中扎實，這批觀眾，演算法再怎麼改都搶不走。"},
+    {label:"全力押注一個新興平台，賭它還沒被玩壞", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.b/150, 0.2, 0.65); },
+      success:{delta:{fame:12, b:4}, result:"賭對了，早期紅利吃得很飽，同業這時候才開始跟風。"},
+      fail:{delta:{money:-8, fame:-4}, result:"賭錯了，新平台的演算法一樣說改就改，這筆投入等於白白燒掉。"}}
+  ]}),
+
 /* ---------- translator ---------- */
 EV({id:"mt_pressure", paths:["translator"], repeat:true, stageMin:2, title:"「潤一下機翻就好」",
   desc:function(p){ return stale("「潤一下機翻就好」", [
@@ -1094,6 +1156,17 @@ EV({id:"mt_pressure", paths:["translator"], repeat:true, stageMin:2, title:"「�
       result:"拒絕後案子少了一些，但手上留下的都是真正需要翻譯功力的稿子。"},
     {label:"接受，先求案子別斷", delta:{money:8, d:-6}, style:"bold",
       result:"案子是接住了，"+"但潤稿的過程比重新翻譯還讓人心累。"}
+  ]}),
+
+EV({id:"translator_niche_down", paths:["translator"], once:true,
+  requires:function(p){ return logCount("「潤一下機翻就好」")>=3; },
+  title:"認真考慮只接機器做不來的稿子",
+  desc:function(p){ return "潤機翻的邀約愈來愈多，"+p.name+"開始認真想：要嘛跟著卷下去，要嘛乾脆只挑機器翻不好的類型接。"; },
+  choices:[
+    {label:"專攻文學性強、機器翻不好的類型", delta:{a:6, money:-4}, style:"safe",
+      result:"案子確實變少了，但留下來的都是真正需要功力的稿子，讀起來也更像自己的作品。"},
+    {label:"乾脆全面接受潤機翻，量大取勝", delta:{money:10, a:-5, d:-4}, style:"bold",
+      result:"案子接得又快又多，只是翻譯這門手藝，感覺一天天在流失。"}
   ]}),
 
 EV({id:"editor_nag", paths:["translator"], repeat:true, title:"每天傳訊息問進度的編輯",
@@ -1205,6 +1278,19 @@ EV({id:"rate_haggle", paths:["translator"], repeat:true, title:"十年沒漲過�
       result:"接受了老價碼，案子是穩住了，心裡那口氣卻一直沒地方出。"}
   ]}),
 
+EV({id:"translator_rate_hike", paths:["translator"], once:true,
+  requires:function(p){ return logCount("十年沒漲過的翻譯費")>=3; },
+  title:"鼓起勇氣調漲報價",
+  desc:function(p){ return "千字費率停在原地太久了，"+p.name+"這次決定不再沉默，把新報價單一次發給所有長期合作的窗口。"; },
+  choices:[
+    {label:"統一調漲兩成，賭老客戶留得住", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.c/150, 0.2, 0.6); },
+      success:{delta:{money:14, c:3}, result:"賭對了，大部分窗口都接受了新價碼，這幾年的委屈總算討回一點。"},
+      fail:{delta:{money:-6, c:-6}, result:"賭錯了，幾個合作多年的窗口默默轉單給別人，新價碼換來的是更冷清的接案量。"}},
+    {label:"只跟新客戶用新價，老客戶維持原價", delta:{money:4, c:2}, style:"safe",
+      result:"折衷的做法沒有得罪任何人，只是漲幅小得幾乎感覺不到。"}
+  ]}),
+
 EV({id:"co_translator_conflict", paths:["translator"], stageMin:2,
   title:"跟共譯者吵起來了",
   desc:function(p){ return p.name+"跟共同翻譯這本書的夥伴，為了譯名風格該統一成哪一派，在訊息群組裡吵得不可開交。"; },
@@ -1237,6 +1323,17 @@ EV({id:"indie_cry", paths:["store"], repeat:true, title:"隔壁書店老闆的�
       result:"安慰完之後換來一些實用的進貨情報，這場酒局算是值得。"},
     {label:"苦笑帶過，各自回家算帳", delta:{d:2}, style:"bold",
       result:"苦笑帶過，各自回家繼續面對自己的帳本，日子還是要過。"}
+  ]}),
+
+EV({id:"indie_alliance", paths:["store"], once:true,
+  requires:function(p){ return logCount("隔壁書店老闆的抱怨大會")>=3; },
+  title:"認真討論要不要一起搞聯合活動",
+  desc:function(p){ return "抱怨大會辦了這麼多次，那位老闆這次認真提議：不如兩間店一起搞個聯合活動，說不定能省成本、拉人流。"; },
+  choices:[
+    {label:"答應合作，一起辦活動", delta:{c:6, money:-3, fame:4}, style:"safe",
+      result:"聯合活動辦得比預期熱鬧，兩間店都多了一批原本不會走進來的客人。"},
+    {label:"婉拒，還是想保留自己的步調", delta:{d:3}, style:"bold",
+      result:"婉拒之後多了點清靜，只是那位老闆難免有點失落。"}
   ]}),
 
 EV({id:"rent_hike", paths:["store"], title:"房東調漲租金三成",
@@ -1281,6 +1378,17 @@ EV({id:"discount_war", paths:["store"], repeat:true, title:"電商折扣戰開�
       result:"策展主題確實吸引到一批專程而來的客人，只是投入的心力沒少花。"},
     {label:"苦撐硬拚，不跟不折", delta:{d:-6, money:-6}, style:"bold",
       result:"硬撐著沒跟折扣，帳面壓力愈來愈大，開始重新盤算下一步。"}
+  ]}),
+
+EV({id:"store_pivot", paths:["store"], once:true,
+  requires:function(p){ return logCount("電商折扣戰開打")>=3; },
+  title:"認真考慮轉型，不跟電商拚價格",
+  desc:function(p){ return "折扣戰打到這個地步，"+p.name+"開始認真想：與其一直被價格戰拖著走，不如把店改造成電商完全做不到的樣子。"; },
+  choices:[
+    {label:"砸錢改造，做成複合式閱讀空間", delta:{money:-16, fame:8, a:4}, style:"bold",
+      result:"改造後的空間意外吸引了一批願意坐下來慢慢待的客人，價格戰突然不再是唯一的戰場。"},
+    {label:"維持現狀，靠老客戶撐著", delta:{d:2}, style:"safe",
+      result:"沒有大動作，靠著熟客的支持繼續撐著，日子照舊，只是那個轉型的念頭偶爾還是會冒出來。"}
   ]}),
 
 EV({id:"landmark", paths:["store"], stageMin:2, title:"意外爆紅的打卡地標",
@@ -1397,6 +1505,17 @@ EV({id:"salary_freeze", paths:["editor","marketing"], repeat:true,
       result:"力爭之後多少擠出了一點加薪空間，只是主管看自己的眼神，多了點防備。"},
     {label:"認了，反正吵也沒用", delta:{d:-4}, style:"safe",
       result:"認了，日子照樣過，只是心裡那股不甘心，一直沒地方發洩。"}
+  ]}),
+
+EV({id:"give_up_raise", paths:["editor","marketing"], once:true,
+  requires:function(p){ return logCount("今年，加薪這件事又沒了下文")>=3; },
+  title:"決定不再等公司加薪",
+  desc:function(p){ return "連續好幾年聽到一樣的台詞之後，"+p.name+"終於想通：加薪這件事，公司大概永遠不會主動給。"; },
+  choices:[
+    {label:"開始經營自己的斜槓收入", delta:{money:10, d:-4}, style:"bold",
+      result:"下班後的時間被斜槓填滿，錢包確實鬆了一點，只是幾乎沒有真正休息的時候。"},
+    {label:"死心，把心力都留給正職就好", delta:{d:4}, style:"safe",
+      result:"死心之後，反而不再為了加薪的事情內耗，日子過得平靜一些。"}
   ]}),
 
 EV({id:"office_gossip", paths:["editor","marketing"], repeat:true,
@@ -2009,6 +2128,22 @@ function editorEnding(){
 
 function marketingEnding(){
   var s=S.stats;
+  if(S.flags.foundedPress){
+    if(s.b>=65 && s.c>=58 && S.fame>=52){
+      return {tag:"great", title:"業界傳奇操盤手",
+        text:S.company+"從一人工作室，做成同業口耳相傳「這案子能不能挖到他們」的等級。"+S.name+"當年那個放手一搏的決定，如今看來賭對了。"};
+    }
+    if(s.b>=55 && s.c>=45){
+      return {tag:"good", title:"接案接到手軟的獨立工作室",
+        text:S.company+"這幾年慢慢做出口碑，"+S.name+"不再是唯一一個要跑客戶的人，開始能挑案子做了。"};
+    }
+    if(s.d<=25){
+      return {tag:"bad", title:"燒光積蓄的行銷工作室",
+        text:S.company+"墊了太多次還沒進帳的預付款，"+S.name+"某天盤點才發現，這門生意早就在賠錢，只是自己一直不想承認。"};
+    }
+    return {tag:"neutral", title:"苦撐待變的獨立工作室",
+      text:S.company+"開了好幾年，接案量時好時壞，"+S.name+"還在硬撐，但至少每個案子上頭寫的，都是自己的名字。"};
+  }
   if(s.b>=65 && s.c>=58 && S.fame>=52){
     return {tag:"great", title:"業界傳奇操盤手",
       text:S.name+"的名字成了行銷企劃課的案例，年輕行銷人視為典範。每次新書要衝銷量，同業第一句話都是「這案子能不能挖到"+S.name+"」。"};
