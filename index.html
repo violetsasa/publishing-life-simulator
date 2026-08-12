@@ -181,6 +181,11 @@ button.choice{
 button.choice:hover{ background:var(--red); color:var(--chalk); border-color:var(--red); transform:translateX(3px); box-shadow:0 3px 10px rgba(255,106,77,.25); }
 button.choice:active{ transform:scale(.98); }
 button.choice:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+button.choice .odds{
+  display:block; font-family:var(--font-mono); font-size:.66rem; letter-spacing:.04em;
+  color:var(--gold); margin-top:4px; opacity:.85;
+}
+button.choice:hover .odds{ color:var(--chalk); }
 button.primary{
   font-family:var(--font-mono); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase;
   background:var(--gold); color:var(--bg); border:1px solid var(--gold); border-radius:9px;
@@ -349,8 +354,9 @@ function hashSeed(str){
   }();
 }
 function makeSeed(){ return Math.random().toString(36).slice(2,10); }
-var rng = Math.random;
-function setSeed(s){ rng = mulberry32(hashSeed(s)); }
+var _rawRng = Math.random;
+function rng(){ if(S) S.rngCalls = (S.rngCalls||0)+1; return _rawRng(); }
+function setSeed(s){ _rawRng = mulberry32(hashSeed(s)); }
 function pick(arr){ return arr[Math.floor(rng()*arr.length)]; }
 function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
 
@@ -509,7 +515,7 @@ EV({id:"lowbirth", stageMin:2,
     {label:"深耕本地鐵粉，做小而美的路線", delta:{fame:5, d:3}, style:"safe"}
   ]}),
 
-EV({id:"grant_scandal", stageMin:2,
+EV({id:"grant_scandal", paths:["editor","marketing","store"], stageMin:2,
   title:"標案風波",
   desc:function(p){ return p.name+"所屬單位標下一筆政府文化補助案，結案報告卻被眼尖的網友抓到「差旅費」比「印製費」還高，話題瞬間炸開。"; },
   choices:[
@@ -519,7 +525,7 @@ EV({id:"grant_scandal", stageMin:2,
       result:"話題是退了，但業界圈子裡，這件事被記了很久。"}
   ]}),
 
-EV({id:"foundation", stageMin:2,
+EV({id:"foundation", paths:["editor","marketing"], stageMin:2,
   title:"老闆的那個基金會",
   desc:function(p){ return "小道消息傳開："+p.name+"的老闆同時掌控著一個文化基金會，補助案審核委員名單裡，一半的人跟老闆吃過飯。"; },
   choices:[
@@ -536,7 +542,7 @@ EV({id:"blurb_backfire", stageMin:1,
       result:"連夜改版總算趕上上市，印刷廠加班費也一併算進了這場風波的成本。"},
     {label:"賭一把，維持原樣照常上市", style:"bold",
       chance:function(p){ return clamp(0.35+p.stats.c/150, 0.2, 0.7); },
-      success:{delta:{fame:8, c:-1}, result:"賭注賭對了，話題冷卻的速度比預期快，這件事很快就被翻篇。"},
+      success:{delta:{fame:8, c:-1}, result:"賭注賭對了，話題冷卻的速度比預期快，這件事很快就被淡忘。"},
       fail:{delta:{fame:-10, c:-5}, result:"賭注沒有賭對，這件事後來又被翻出來鞭了一輪。"}}
   ]}),
 
@@ -630,7 +636,7 @@ EV({id:"marriage_balance", paths:["all"], stageMin:3, repeat:true,
 
 /* ---------- author ---------- */
 EV({id:"hater", paths:["author"], title:"戰力與怨念都很強的黑粉",
-  desc:function(p){ return "一位帳號沒有大頭貼的讀者，開始逐字逐句挑"+p.name+"每一本書的錯，戰力驚人、怨念更驚人，甚至做了整理帖。"; },
+  desc:function(p){ return "一位帳號沒有大頭貼的讀者，開始逐字逐句挑"+p.name+"每一本書的錯，戰力驚人、怨念更驚人，甚至做了整理文。"; },
   choices:[
     {label:"完全不看，專心寫下一本", delta:{d:6, a:2}, style:"safe",
       result:"不看不聽之後，反而寫得更順了，那個帳號還在，但已經影響不了什麼。"},
@@ -658,7 +664,7 @@ EV({id:"photo_rights", paths:["author"], title:"沒簽授權的那張照片",
       fail:{delta:{fame:-14, money:-20}, result:"還是被發現了，而且是在最壞的時機點——鬧上新聞，和解金也少不了。"}}
   ]}),
 
-EV({id:"celeb_memoir", paths:["author"], stageMin:2, weight:0.6,
+EV({id:"celeb_memoir", paths:["editor"], stageMin:2, weight:0.6,
   title:"一萬美金簽下的名人自傳",
   desc:function(p){ return p.name+"力排眾議，砸下一萬美金預付金，簽下一位美國名人的自傳合作案。合約墨水未乾的隔天，對方就被爆出捲入一樁駭人聽聞的私人島嶼醜聞。"; },
   choices:[
@@ -823,7 +829,7 @@ EV({id:"royalty_error", paths:["editor"], title:"版稅對帳單算錯了",
   ]}),
 
 EV({id:"public_called_out", paths:["editor"], title:"被作者公開點名開嗆",
-  desc:function(p){ return "一位合作作者在社群上公開發文，指控"+p.name+"「不尊重創作」，底下瞬間湧入圍觀群眾。"; },
+  desc:function(p){ return "一位合作作者在社群上公開發文，指控"+p.name+"「不尊重創作」，底下瞬間湧入看熱鬧的路人。"; },
   choices:[
     {label:"私訊約對方好好談", delta:{c:3, d:-4}, style:"safe",
       result:"私下談開之後，對方後來刪了那則發文，關係算是修復了一半。"},
@@ -836,8 +842,30 @@ EV({id:"layoffs", paths:["editor"], stageMin:2, title:"裁員潮",
   choices:[
     {label:"主動提出貢獻報告、爭取留下", delta:{d:-5, b:4}, style:"bold",
       result:"報告做得扎實，這次總算是保住了位置。"},
-    {label:"開始默默投履歷", delta:{c:3, d:-2}, style:"safe",
+    {label:"開始默默投履歷", delta:{c:3, d:-2}, style:"safe", flag:"jobHunting",
       result:"履歷投出去後心裡踏實不少，至少手上多留了一條退路。"}
+  ]}),
+
+EV({id:"headhunted", paths:["editor"], stageMin:3, once:true,
+  requires:function(p){ return p.flags.jobHunting && !p.flags.jumped && !p.flags.foundedPress; },
+  title:"獵頭找上門",
+  desc:function(p){ return "一位獵頭主動聯絡"+p.name+"，開出的職級和薪水都比現職漂亮不少，只是要從頭適應一個新團隊。"; },
+  choices:[
+    {label:"跳槽到對家，換一個更高的位置", delta:{money:10, fame:4, c:-4}, style:"bold", flag:"jumped",
+      result:"新位置確實風光，但重新累積信任的過程，比想像中磨人。"},
+    {label:"留下來，繼續在熟悉的地方熬資歷", delta:{d:3, c:2}, style:"safe",
+      result:"留下來的決定沒有大起伏，只是那個更高的位置，後來想起時偶爾會想「如果當初」。"}
+  ]}),
+
+EV({id:"going_solo", paths:["editor"], stageMin:3, once:true,
+  requires:function(p){ return p.flags.jumped && !p.flags.foundedPress; },
+  title:"自立門戶的念頭",
+  desc:function(p){ return "跳過槽、也看過幾間公司的內部運作之後，"+p.name+"開始認真盤算：自己出來開一間工作室型出版社，是不是可行。"; },
+  choices:[
+    {label:"拿出積蓄，開一間屬於自己的出版社", delta:{money:-20, fame:6, d:-4}, style:"bold", flag:"foundedPress",
+      result:"創業初期忙到沒有假日，但書架上終於出現了自己說了算的書單。"},
+    {label:"再穩紮穩打幾年，先把積蓄存夠", delta:{money:5}, style:"safe",
+      result:"這個念頭先收進口袋，日子照常過，只是心裡那顆種子沒有真的消失。"}
   ]}),
 
 EV({id:"moonlight", paths:["editor"], stageMin:2, title:"偷偷接的外稿",
@@ -877,7 +905,7 @@ EV({id:"budget_cut", paths:["editor"], repeat:true, stageMin:2,
 EV({id:"kol_leak", paths:["marketing"], title:"業配網紅偷渡私貨",
   desc:function(p){ return p.name+"砸預算邀來的網紅業配，貼文卻夾帶對競品出版社的暗酸，留言區戰成一團。"; },
   choices:[
-    {label:"立刻聯繫網紅下架修正", delta:{money:-6, d:-4}, style:"safe",
+    {label:"立刻聯絡網紅下架修正", delta:{money:-8, d:-1}, style:"safe",
       result:"下架修正得算快，風波沒有燒太大，只是這筆預算算是白花了一半。"},
     {label:"順勢炒話題，蹭聲量", delta:{fame:9, c:-3}, style:"bold",
       result:"聲量確實衝上去了，但競品出版社那邊，關係算是徹底鬧僵。"}
@@ -930,9 +958,9 @@ EV({id:"rainy_presser", paths:["marketing"], repeat:true, title:"下著雨的記
   ]}),
 
 EV({id:"burnout_sm", paths:["marketing"], title:"連續爆肝三個月的小編",
-  desc:function(p){ return p.name+"連續三個月每天緊盯後台數據到半夜，某天手滑把負面留言誤發成官方發文，瞬間衝上熱搜。"; },
+  desc:function(p){ return p.name+"連續三個月每天緊盯後台數據到半夜，某天手滑把負面留言誤發成官方發文，瞬間衝上討論熱門。"; },
   choices:[
-    {label:"迅速公關滅火、誠懇道歉", delta:{fame:-5, d:-6}, style:"safe",
+    {label:"迅速公關滅火、誠懇道歉", delta:{fame:-5, d:-2}, style:"safe",
       result:"滅火滅得算快，話題沒有燒太久，但那幾天的心跳應該破表了。"},
     {label:"直接請假，讓同事代打", delta:{d:6, fame:-8}, style:"bold",
       result:"請假休息確實回了血，只是這件事最後還是被同業拿來當茶餘飯後的話題。"}
@@ -953,7 +981,7 @@ EV({id:"ad_burn", paths:["marketing"], repeat:true, stageMin:2, title:"廣告投
       fail:{delta:{money:-16, fame:-4}, result:"燒到最後數字依然難看，這筆預算變成了一個內部笑話。"}}
   ]}),
 
-EV({id:"campaign_hit", paths:["marketing"], stageMin:2, title:"意外做出年度爆款企劃",
+EV({id:"campaign_hit", paths:["marketing"], stageMin:2, title:"意外做出年度話題企劃",
   desc:function(p){ return p.name+"隨手發想的一個小企劃，被總編轉發後意外成為全年討論度最高的行銷案例。"; },
   choices:[
     {label:"整理成方法論，對外分享", delta:{fame:10, c:6}, style:"bold",
@@ -967,7 +995,7 @@ EV({id:"boycott_adjacent", paths:["marketing"], stageMin:2,
   desc:function(p){ return p.name+"主打的行銷案，合作網紅被爆出跟另一樁醜聞有牽連，新書還沒上市就被讀者要求「連坐抵制」。"; },
   choices:[
     {label:"緊急切割、公開撤下合作內容", delta:{money:-10, fame:-4}, style:"safe",
-      result:"切割得算快，損失止住了，只是這批預算等於是打了水漂。"},
+      result:"切割得算快，損失止住了，只是這批預算等於是白白燒掉。"},
     {label:"觀望，賭風波很快過去", style:"bold",
       chance:function(p){ return clamp(0.3+p.stats.c/150, 0.15, 0.6); },
       success:{delta:{fame:4}, result:"風波真的很快就過去了，新書上市幾乎沒受到影響。"},
@@ -978,7 +1006,7 @@ EV({id:"algorithm_change", paths:["marketing"], repeat:true, stageMin:2,
   title:"演算法一夜大改",
   desc:function(p){ return stale("演算法一夜大改", [
     "社群平台一夜之間改了演算法，"+p.name+"上一檔還好好的貼文觸及率，這檔直接腰斬。",
-    "演算法又雙叒改了，"+p.name+"開始覺得自己在追一個永遠追不上的東西。",
+    "演算法又改版了，"+p.name+"開始覺得自己在追一個永遠追不上的東西。",
     "這是今年第三次演算法大改，"+p.name+"乾脆把舊的打法筆記全部歸零重寫。"
   ]); },
   choices:[
@@ -1187,6 +1215,18 @@ EV({id:"landmark", paths:["store"], stageMin:2, title:"意外爆紅的打卡地�
       result:"沒有商業化，這波熱潮慢慢退去，但留下來的讀者，是真心喜歡這間店的人。"}
   ]}),
 
+EV({id:"store_reno_bet", paths:["store"], stageMin:2,
+  title:"要不要賭一把，砸錢改裝成打卡熱點",
+  desc:function(p){ return "同業一面書牆佈置成打卡熱點，衝上社群版面，"+p.name+"也在猶豫要不要砸下裝潢貸款，賭一波流量。"; },
+  choices:[
+    {label:"照原本步調經營，不追這波風潮", delta:{d:2}, style:"safe",
+      result:"沒有跟風，店還是老樣子，但至少不用背上一筆裝潢貸款。"},
+    {label:"砸錢改裝，賭一波打卡人潮", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.b/150, 0.2, 0.65); },
+      success:{delta:{money:12, fame:8, d:-3}, result:"改裝後真的紅了一波，結帳隊伍一路排到店外面。"},
+      fail:{delta:{money:-14, d:-4}, result:"改裝完卻乏人問津，只留下一筆裝潢貸款和一面沒人拍的牆。"}}
+  ]}),
+
 EV({id:"community_market", paths:["store"], repeat:true, title:"里長邀請合辦市集",
   desc:function(p){ return stale("里長邀請合辦市集", [
     "社區里長找上"+p.name+"，提議在店門口合辦小型市集，「順便幫忙帶點人氣」。",
@@ -1236,7 +1276,7 @@ EV({id:"low_social", paths:["store"], weight:1.2, repeat:true,
     {label:"痛定思痛，練習寒暄與應對", delta:{c:8, d:-2}, style:"safe",
       result:"練習寒暄之後，業務們的態度慢慢回溫，訂貨也順暢了一些。"},
     {label:"無所謂，反正書自己會賣", delta:{c:-4, fame:-2}, style:"bold",
-      result:"無所謂的態度換來的是愈來愈少人願意主動聯繫。"}
+      result:"無所謂的態度換來的是愈來愈少人願意主動聯絡。"}
   ]}),
 
 EV({id:"showrooming", paths:["store"], repeat:true, title:"拍照比價的顧客",
@@ -1268,7 +1308,7 @@ EV({id:"no_creativity", paths:["store"], weight:1.3, repeat:true,
   ]}),
 
 /* ---------- extra depth ---------- */
-EV({id:"salary_freeze", repeat:true,
+EV({id:"salary_freeze", paths:["editor","marketing"], repeat:true,
   title:"今年，加薪這件事又沒了下文",
   desc:function(p){ return stale("今年，加薪這件事又沒了下文", [
     "年度考核會議上，主管一句「今年產業環境不好」，就把加薪這個話題輕輕帶過。"+p.name+"看著同樣的數字連續第三年沒動。",
@@ -1282,7 +1322,7 @@ EV({id:"salary_freeze", repeat:true,
       result:"認了，日子照樣過，只是心裡那股不甘心，一直沒地方發洩。"}
   ]}),
 
-EV({id:"office_gossip", repeat:true,
+EV({id:"office_gossip", paths:["editor","marketing"], repeat:true,
   title:"尾牙上的耳語",
   desc:function(p){ return stale("尾牙上的耳語", [
     "尾牙散場後的續攤場合，酒過三巡，"+p.name+"聽到不少業界八卦——誰家又要倒了、誰又跳槽去對家，真真假假難以分辨。",
@@ -1367,6 +1407,10 @@ function resumeProgress(){
   var saved = loadProgress();
   if(!saved) return;
   S = saved;
+  var calls = S.rngCalls||0;
+  setSeed(S.seed);
+  S.rngCalls = 0;
+  for(var i=0;i<calls;i++) rng(); // 快轉 rng 到存檔當下的狀態，維持「同種子＋同選擇＝同人生」在重整頁面後依然成立
   render();
 }
 
@@ -1398,7 +1442,8 @@ function newGame(name, pathKey, background){
     gambleWinStreak:0,
     allocFocusKey:null,
     allocFocusStreak:0,
-    hadNegativeMoneyEarly:false
+    hadNegativeMoneyEarly:false,
+    rngCalls:0
   };
   setSeed(S.seed);
   startYear();
@@ -1415,6 +1460,13 @@ function startYear(){
   S.eventsThisYear=0;
   S.allocPool = poolForYear();
   S.allocSpent = {a:0,b:0,c:0,d:0,e:0};
+  if(S.stageIdx>0 || S.turnInStage>0){
+    var beforeD = S.stats.d;
+    S.stats.d = clamp(S.stats.d+3, 0, 100);
+    if(S.stats.d>beforeD){
+      S.entries.push('<div class="ticker"><b>年初</b><span>年假總算喘了口氣，抗壓性緩緩回升了一些。</span></div>');
+    }
+  }
   if(S.money < -20){
     var interest = Math.max(2, Math.round(Math.abs(S.money)*0.05));
     S.money -= interest;
@@ -1578,11 +1630,11 @@ function checkDebtCrisis(){
 }
 
 function checkBurnoutCrisis(){
-  if(S.stats.d<=20){ S.lowGritStreak = (S.lowGritStreak||0)+1; }
+  if(S.stats.d<=15){ S.lowGritStreak = (S.lowGritStreak||0)+1; }
   else{ S.lowGritStreak = 0; }
   if(S.lowGritStreak===2){ S.flags.nearBurnout = true; }
   if(S.flags.nearBurnout && S.lowGritStreak<2) unlockTrait("battleScarred");
-  if(S.lowGritStreak>=3){
+  if(S.lowGritStreak>=4){
     S.forcedEnding = "burnout";
     computeEnding();
     return true;
@@ -1647,7 +1699,9 @@ var TAGS = [
   {label:"穩紮穩打", test:function(){ return (S.styleCount.safe||0)-(S.styleCount.bold||0)>=6; }},
   {label:"步入婚姻", test:function(){ return !!S.flags.married; }},
   {label:"為工作分過手", test:function(){ return !!S.flags.brokeUp; }},
-  {label:"單身到底", test:function(){ return !S.flags.dating && (S.ending.tag==="good"||S.ending.tag==="great"); }}
+  {label:"單身到底", test:function(){ return !S.flags.dating && (S.ending.tag==="good"||S.ending.tag==="great"); }},
+  {label:"自立門戶", test:function(){ return !!S.flags.foundedPress; }},
+  {label:"跳槽老手", test:function(){ return !!S.flags.jumped; }}
 ];
 
 /* ---------- 特質系統：由行為模式解鎖，永久改變後續機制 ---------- */
@@ -1778,7 +1832,7 @@ function burnoutEnding(){
 
 function authorEnding(){
   var s=S.stats;
-  if(s.a>=82 && S.fame>=75 && s.e>=60){
+  if(s.a>=70 && S.fame>=55 && s.e>=45){
     return {tag:"great", title:"諾貝爾文學獎與國外授權",
       text:S.name+"站上斯德哥爾摩的講台，手稿被譯成十七種語言。當年那個在截稿夜裡懷疑自己的無名作者，如今成了教科書上的一個章節。全世界的出版社，現在搶著回"+S.name+"的信。"};
   }
@@ -1804,7 +1858,7 @@ function authorEnding(){
 
 function editorEnding(){
   var s=S.stats;
-  if(s.b>=80 && s.c>=68 && S.fame>=55){
+  if(s.b>=68 && s.c>=58 && S.fame>=42){
     return {tag:"great", title:"創辦獨立出版社的傳奇總編",
       text:S.name+"離開大集團，用退休金加信用貸款開了自己的出版社。十年後，業界後輩提起"+S.name+"的名字時，語氣裡都帶著敬意。"};
   }
@@ -1822,7 +1876,7 @@ function editorEnding(){
 
 function marketingEnding(){
   var s=S.stats;
-  if(s.b>=75 && s.c>=68 && S.fame>=70){
+  if(s.b>=65 && s.c>=58 && S.fame>=52){
     return {tag:"great", title:"業界傳奇操盤手",
       text:S.name+"的名字成了行銷企劃課的案例，年輕行銷人視為典範。每次新書要衝銷量，同業第一句話都是「這案子能不能挖到"+S.name+"」。"};
   }
@@ -1835,12 +1889,12 @@ function marketingEnding(){
       text:S.name+"因為一場處理不當的公關風暴，在會議室裡遞出辭呈。離開那天，同事送的卡片上寫著「辛苦了」，沒人多說什麼。"};
   }
   return {tag:"neutral", title:"平凡但踏實的行銷人",
-    text:S.name+"沒有大爆款，也沒有大災難，就這樣一檔接一檔地把案子做完。這份工作教會他最重要的事：預算永遠不夠，截止日永遠提前。"};
+    text:S.name+"沒有大熱案子，也沒有大災難，就這樣一檔接一檔地把案子做完。這份工作教會他最重要的事：預算永遠不夠，截止日永遠提前。"};
 }
 
 function translatorEnding(){
   var s=S.stats;
-  if(s.a>=80 && s.b>=75 && S.fame>=60){
+  if(s.a>=68 && s.b>=64 && S.fame>=42){
     return {tag:"great", title:"讓原作者親自道謝的譯者",
       text:S.name+"翻譯的作品拿下國際翻譯獎，原作者在得獎感言裡特別提到「沒有這個譯本，我的書到不了這裡」。長年隱形的名字，終於被念了出來。"};
   }
@@ -1862,13 +1916,13 @@ function translatorEnding(){
 
 function storeEnding(){
   var s=S.stats;
-  if(s.b>=68 && s.c>=65 && S.fame>=70){
+  if(s.b>=58 && s.c>=55 && S.fame>=50){
     return {tag:"great", title:"全國知名的獨立書店地標",
       text:S.name+"的店成了外國媒體介紹「亞洲最美書店」名單上的常客。遊客專程來拍照，老讀者則專程來買書——"+S.name+"用品味守住了一整條街的靈魂。"};
   }
   if(s.a>=55 && S.money>=0){
     return {tag:"good", title:"穩定經營的社區書店",
-      text:S.name+"的店不是打卡熱點，卻是附近居民下班會順路走進去的地方。租金依然壓力山大，但這間店，早就成了社區記憶的一部分。"};
+      text:S.name+"的店不是打卡熱點，卻是附近居民下班會順路走進去的地方。租金依然沉重，但這間店，早就成了社區記憶的一部分。"};
   }
   if(s.d<=25){
     return {tag:"bad", title:"腰傷退場",
@@ -1962,7 +2016,13 @@ function render(scrollDown){
     pendingLog = '<div class="entry pending"><div class="esub">'+S.age+' 歲 · '+BEAT_LABELS[S.eventsThisYear+1]+'</div>'+
       '<div class="etitle">'+esc(ev.title)+'</div><p>'+esc(ev.desc(S))+'</p></div>';
     footer = '<div class="choices">'+ev.choices.map(function(c,i){
-      return '<button class="choice" data-choice="'+i+'">'+esc(c.label)+'</button>';
+      var oddsHTML = "";
+      if(c.success && c.fail){
+        var baseChance = typeof c.chance==="function" ? c.chance(S) : (c.chance===undefined?0.5:c.chance);
+        var pct = Math.round(gambleChance(baseChance)*100);
+        oddsHTML = '<span class="odds">放手一搏 · 成功機率 '+pct+'%</span>';
+      }
+      return '<button class="choice" data-choice="'+i+'">'+esc(c.label)+oddsHTML+'</button>';
     }).join("")+'</div>';
   } else if(S.phase==="post"){
     footer = '<div class="actions"><button class="primary" id="nextBtn">繼續</button></div>';
@@ -2102,8 +2162,8 @@ function renderEnding(){
     '<div class="ending-icon-wrap">'+icon("trophy","ending-icon")+'</div>'+
     '<span class="ending-tag '+e.tag+'">Ending</span>'+
     '<h2 class="title">'+esc(e.title)+'</h2>'+
-    '<div class="sub">'+PATHS[S.path].noun+' '+esc(S.name)+' · 心境 '+S.age+' 歲 · 種子 '+esc(S.seed)+'</div>'+
-    '<p>'+e.text+'</p>'+
+    '<div class="sub">'+PATHS[S.path].noun+' '+esc(S.name)+' · 終章 '+S.age+' 歲 · 種子 '+esc(S.seed)+'</div>'+
+    '<p>'+esc(e.text)+'</p>'+
     (e.tags&&e.tags.length ? '<div class="careertags">'+e.tags.map(function(t){return '<span>'+esc(t)+'</span>';}).join("")+'</div>' : "")+
     (e.traits&&e.traits.length ? '<div class="sub" style="margin-top:6px;">解鎖特質</div><div class="traitlist">'+
       e.traits.map(function(t){ return '<div class="tcard"><div class="tname">'+icon("star")+esc(t.name)+'</div><div class="tdesc">'+esc(t.desc)+'</div></div>'; }).join("")+
