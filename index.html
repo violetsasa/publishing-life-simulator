@@ -126,6 +126,14 @@ button{ font:inherit; }
 .entry.trait .etitle{ color:var(--ink); display:flex; align-items:center; gap:6px; }
 .entry.trait .trait-icon{ width:18px; height:auto; color:var(--ink); }
 .entry.trait p{ font-size:.86rem; color:var(--dim); }
+.entry.breakthrough{ border-color:var(--good); border-width:2px; background:rgba(63,143,95,.08); }
+.entry.breakthrough .etitle{ color:var(--good); display:flex; align-items:center; gap:6px; }
+.entry.breakthrough .breakthrough-icon{ width:18px; height:auto; color:var(--good); }
+.entry.breakthrough p{ font-size:.86rem; color:var(--dim); }
+.entry.slump{ border-color:var(--bad); border-width:2px; background:rgba(201,79,79,.08); }
+.entry.slump .etitle{ color:var(--bad); display:flex; align-items:center; gap:6px; }
+.entry.slump .slump-icon{ width:18px; height:auto; color:var(--bad); }
+.entry.slump p{ font-size:.86rem; color:var(--dim); }
 .traitlist{ display:flex; flex-direction:column; gap:8px; margin:4px 0 20px; }
 .traitlist .tcard{ border:1.5px solid var(--ink); border-radius:12px; padding:10px 12px; background:#fdf0cf; }
 .traitlist .tname{ font-family:var(--font-display); font-size:.92rem; color:var(--ink); display:flex; align-items:center; gap:6px; margin-bottom:2px; font-weight:700; }
@@ -1805,6 +1813,7 @@ function resumeProgress(){
   var saved = loadProgress();
   if(!saved) return;
   S = saved;
+  if(!S.breakthroughTier) S.breakthroughTier = {a:0,b:0,c:0,d:0,e:0};
   var calls = S.rngCalls||0;
   setSeed(S.seed);
   S.rngCalls = 0;
@@ -1847,7 +1856,8 @@ function newGame(name, pathKey, background){
     pendingChoiceOrder:null,
     salesTally:0,
     stageStartSnapshot:null,
-    yearStartSnapshot:null
+    yearStartSnapshot:null,
+    breakthroughTier:{a:0,b:0,c:0,d:0,e:0}
   };
   setSeed(S.seed);
   if(pathKey==="editor" || pathKey==="marketing"){ S.company = pick(COMPANIES); }
@@ -1993,6 +2003,7 @@ function startYear(){
     if(S.stats.d>beforeD){
       S.entries.push('<div class="ticker"><b>年初</b><span>年假總算喘了口氣，抗壓性緩緩回升了一些。</span></div>');
     }
+    checkBreakthroughs();
   }
   if(S.money < -20){
     var interest = Math.max(2, Math.round(Math.abs(S.money)*0.05));
@@ -2009,6 +2020,7 @@ function confirmAllocation(){
   Object.keys(S.allocSpent).forEach(function(k){
     S.stats[k] = clamp(S.stats[k]+S.allocSpent[k],0,100);
   });
+  checkBreakthroughs();
   drawEvent();
 }
 
@@ -2140,6 +2152,7 @@ function resolveChoice(idx){
     '<div class="result-text"><span class="vdot '+verdict.cls+'"></span><span class="rtxt">'+esc(resultText)+'</span></div>'+
     '<div class="delta">'+(deltaHTML||'<span style="color:var(--dim);background:none;border:none;padding:0;">（沒有明顯變化）</span>')+'</div></div>'
   );
+  checkBreakthroughs();
   S.log.push({age:S.age, title:ev.title, choice:choice.label, company:companyAtEvent});
   S.pendingEventId = null;
   S.phase="post";
@@ -2291,6 +2304,10 @@ function unlockTrait(key){
 function gambleChance(base){
   var c = base;
   if(S && S.traits && S.traits.ironNerve) c += 0.08;
+  if(S && S.breakthroughTier){
+    var mastered = ["a","b","c","d","e"].some(function(k){ return S.breakthroughTier[k]>=2; });
+    if(mastered) c += 0.08; // 精通任一能力就給上限 +8%，不逐項疊加——批次模擬顯示隨機配點下 8 成局都會精通至少一項，逐項疊加會讓多數玩家不知不覺拿到 15-25% 的機率加成，稀缺感就沒了
+  }
   return clamp(c, 0.05, 0.95);
 }
 function checkGambleTraits(won){
@@ -2315,6 +2332,74 @@ function checkAllocTraits(){
     S.allocFocusStreak = S.allocFocusKey ? 1 : 0;
   }
   if(S.allocFocusStreak>=3) unlockTrait("specialist");
+}
+
+/* ---------- 能力突破系統：能力值跨過門檻時給出立即的文字回饋，精通後實際改變放手一搏的成功機率 ---------- */
+var BREAKTHROUGH_UP = {
+  a:[
+    "「{L}」這陣子明顯上了一個台階——同樣份量的工作，做起來卻更游刃有餘，連自己都感覺得到差距。",
+    "「{L}」已經練到能被人一眼認出來的地步，業界開始有人私下提起你的名字。往後只要是靠這份本事放手一搏，都比別人多一分底氣。（相關的放手一搏，成功機率 +5%）"
+  ],
+  b:[
+    "「{L}」開始有了自己的味道，這陣子做的判斷，命中的次數明顯比失手多。",
+    "「{L}」已經練到很少人能比的地步，這份眼光現在是你最值得信任的武器。（相關的放手一搏，成功機率 +5%）"
+  ],
+  c:[
+    "「{L}」這陣子明顯拓寬了，很多以前要拜託好幾層才約得到的人，現在一通電話就有回音。",
+    "「{L}」已經是業界公認的資源了，很多機會不用你去找，反而主動找上門。（相關的放手一搏，成功機率 +5%）"
+  ],
+  d:[
+    "「{L}」這陣子練得扎實了，同樣的壓力放在以前可能就垮了，現在卻還能撐住。",
+    "「{L}」已經練到很少人能比的地步，那些會壓垮別人的關頭，對你來說只是日常的一部分。（相關的放手一搏，成功機率 +5%）"
+  ],
+  e:[
+    "「{L}」這陣子似乎特別站在你這邊，好幾次驚險的關頭，都莫名其妙地有驚無險。",
+    "「{L}」已經好到讓同業開玩笑說你「歐氣爆棚」，關鍵時刻，運勢總是偏向你一點。（相關的放手一搏，成功機率 +5%）"
+  ]
+};
+var BREAKTHROUGH_DOWN = {
+  a:"「{L}」這陣子明顯退步了，交出去的東西連自己都不太滿意，那種曾經有過的手感，好像悄悄溜走了一些。",
+  b:"「{L}」這陣子頻頻失準，好幾次的判斷事後回頭看，都覺得可以做得更好。",
+  c:"「{L}」這陣子明顯冷了下來，幾通原本秒回的訊息，這次都晾了好幾天。",
+  d:"「{L}」這陣子明顯撐不住了，一點小事就覺得快要繃斷，得找個時間喘口氣。",
+  e:"「{L}」這陣子怎麼算都不順，一些原本該穩的事，接連出了些小差錯。"
+};
+var BREAKTHROUGH_THRESH = [50, 75];
+function breakthroughTierFor(val){
+  if(val>=BREAKTHROUGH_THRESH[1]) return 2;
+  if(val>=BREAKTHROUGH_THRESH[0]) return 1;
+  return 0;
+}
+function pushBreakthroughCard(key, tier, up){
+  var label = PATHS[S.path].labels[key];
+  var text = up
+    ? BREAKTHROUGH_UP[key][tier-1].replace("{L}", label)
+    : BREAKTHROUGH_DOWN[key].replace("{L}", label);
+  S.entries.push(
+    '<div class="entry '+(up?"breakthrough":"slump")+'"><div class="esub">'+S.age+' 歲 · '+(up?"能力突破":"能力退步")+'</div>'+
+    '<div class="etitle">'+icon(SLOT_ICON[key],(up?"breakthrough-icon":"slump-icon"))+esc(label)+(up?(tier===2?" · 精通":" · 突破"):" · 退步")+'</div>'+
+    '<p>'+esc(text)+'</p></div>'
+  );
+}
+/* 每次能力值變動後都要呼叫，跨過 50/75 門檻觸發文字回饋；下滑要留 6 點緩衝避免在門檻附近反覆觸發 */
+function checkBreakthroughs(){
+  if(!S || !S.breakthroughTier) return;
+  ["a","b","c","d","e"].forEach(function(k){
+    var val = S.stats[k];
+    var cur = S.breakthroughTier[k]||0;
+    var target = breakthroughTierFor(val);
+    if(target>cur){
+      S.breakthroughTier[k] = target;
+      pushBreakthroughCard(k, target, true);
+    } else if(cur>=1){
+      var floor = cur===2 ? BREAKTHROUGH_THRESH[1]-6 : BREAKTHROUGH_THRESH[0]-6;
+      if(val<floor){
+        var newTier = breakthroughTierFor(val);
+        S.breakthroughTier[k] = newTier;
+        pushBreakthroughCard(k, cur, false);
+      }
+    }
+  });
 }
 
 function computeTags(){
