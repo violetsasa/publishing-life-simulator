@@ -177,6 +177,9 @@ button{ font:inherit; }
 .entry.stage-summary{ border-color:var(--gold); border-width:2px; background:var(--panel2); }
 .entry.stage-summary .etitle{ color:var(--gold); }
 .stage-sales-highlight{ margin:8px 0 0; font-size:.85rem; color:var(--gold); font-weight:700; }
+.stage-narrative, .year-narrative{ font-size:.85rem; line-height:1.65; color:var(--chalk); margin:2px 0 8px; }
+.entry.year-summary{ border-style:dashed; background:var(--panel); }
+.entry.year-summary .etitle{ color:var(--accent, var(--ink)); font-size:.82rem; }
 
 .ftr{
   position:sticky; bottom:0; z-index:5;
@@ -1843,7 +1846,8 @@ function newGame(name, pathKey, background){
     company:null,
     pendingChoiceOrder:null,
     salesTally:0,
-    stageStartSnapshot:null
+    stageStartSnapshot:null,
+    yearStartSnapshot:null
   };
   setSeed(S.seed);
   if(pathKey==="editor" || pathKey==="marketing"){ S.company = pick(COMPANIES); }
@@ -1856,6 +1860,75 @@ function snapshotStage(){
     money:S.money, fame:S.fame, sales:S.salesTally
   };
 }
+function snapshotYear(){
+  S.yearStartSnapshot = {
+    stats:{a:S.stats.a,b:S.stats.b,c:S.stats.c,d:S.stats.d,e:S.stats.e},
+    money:S.money, fame:S.fame, sales:S.salesTally
+  };
+}
+
+/* 能力值變動的文字回饋：每個路線 x 每個能力槽各自一句「這段時間發生了什麼」的敘述，
+   用在階段結算／年度回顧裡，不只是給數字，而是講清楚能力升降具體代表什麼 */
+var STAT_FLAVOR = {
+  author:{
+    a:{up:"文字的節奏感抓得更準了，寫起故事來比以前更加得心應手。", down:"最近的稿子讀起來有點卡，文字的手感生疏了不少。"},
+    b:{up:"腦子裡的點子源源不絕，題材常常信手拈來。", down:"靈感有點枯竭，坐在稿紙前常常一片空白。"},
+    c:{up:"業界的朋友越認越多，能動用的資源也跟著鬆動起來。", down:"跟業界的聯繫淡了，能接到的機會也跟著變少。"},
+    d:{up:"扛壓力的韌性練出來了，截稿日不再像以前那麼可怕。", down:"壓力扛得越來越吃力，情緒常常繃不住。"},
+    e:{up:"手氣正順，這陣子做什麼都比較容易碰上好事。", down:"運氣有點背，屋漏偏逢連夜雨。"}
+  },
+  editor:{
+    a:{up:"抓稿的手感越來越準，一眼就能看出問題出在哪裡。", down:"改稿改得有點鈍，該抓的問題常常漏看。"},
+    b:{up:"選題的嗅覺越來越靈，市場的風向抓得比別人快。", down:"選題常常押錯寶，市場反應總是慢半拍。"},
+    c:{up:"業界關係越拉越廣，找作者、調資源都更順手。", down:"人脈有點斷了線，重要消息常常晚別人一步聽到。"},
+    d:{up:"扛得住老闆跟作者兩頭的壓力了，心態變得更穩。", down:"被夾在中間夾得越來越喘不過氣。"},
+    e:{up:"手氣正順，這陣子做什麼都比較容易碰上好事。", down:"運氣有點背，屋漏偏逢連夜雨。"}
+  },
+  marketing:{
+    a:{up:"文案越寫越有煽動力，讀者常常不知不覺就被說服掏了錢包。", down:"文案寫得有點鈍，轉換率明顯掉了一截。"},
+    b:{up:"整案的節奏抓得更準，宣傳一步步都踩在點上。", down:"企劃常常想到哪做到哪，效果打了折扣。"},
+    c:{up:"業界關係越拉越廣，媒體、通路都更願意幫忙推一把。", down:"人脈有點斷了線，資源越來越難調。"},
+    d:{up:"扛得住業績跟老闆的雙重壓力了，心態變得更穩。", down:"被業績壓得越來越喘不過氣。"},
+    e:{up:"手氣正順，這陣子做什麼都比較容易碰上好事。", down:"運氣有點背，屋漏偏逢連夜雨。"}
+  },
+  translator:{
+    a:{up:"原文讀起來越來越沒有隔閡，語感也慢慢養出來了。", down:"外語的手感有點生疏，常常要多查幾次字典。"},
+    b:{up:"譯筆越來越有自己的調性，讀起來不再像生硬的翻譯腔。", down:"譯筆卡卡的，句子讀起來有點僵硬。"},
+    c:{up:"業界的門路越走越熟，接案也跟著順了不少。", down:"跟編輯、譯者圈的聯繫淡了，案源也跟著變少。"},
+    d:{up:"自律力練出來了，不用人催也能準時交稿。", down:"自律力有點鬆懈，常常拖到最後一刻才動筆。"},
+    e:{up:"手氣正順，這陣子做什麼都比較容易碰上好事。", down:"運氣有點背，屋漏偏逢連夜雨。"}
+  },
+  store:{
+    a:{up:"選書的眼光越來越準，常常挑到還沒紅但會紅的書。", down:"選書常常押錯，滯銷品越堆越多。"},
+    b:{up:"店裡的活動企劃越玩越花，常常吸引路過的人多看一眼。", down:"活動想不出新花樣，人潮越來越冷清。"},
+    c:{up:"跟熟客、廠商的關係越處越熟，合作也更順手。", down:"跟人打交道有點生疏，合作機會也跟著變少。"},
+    d:{up:"體力練得更扎實了，長時間站著顧店也撐得住。", down:"體力有點吃不消，顧店顧到常常腰痠背痛。"},
+    e:{up:"手頭寬裕了不少，周轉不再那麼緊繃。", down:"資金越來越吃緊，每次進貨都要精打細算。"}
+  }
+};
+
+/* 用階段/年度起訖的能力值差，挑出變動最大的 1-2 項配上文字敘述，
+   不只給玩家看數字增減，也講清楚「文筆變好」具體是指什麼 */
+function periodNarrative(path, snap, cur, salesDiff){
+  var order = PATHS[path].order;
+  var deltas = order.map(function(k){ return {k:k, d:cur.stats[k]-snap.stats[k]}; })
+    .filter(function(o){ return Math.abs(o.d)>=3; })
+    .sort(function(a,b){ return Math.abs(b.d)-Math.abs(a.d); });
+  var lines = [];
+  for(var i=0;i<deltas.length && lines.length<2;i++){
+    var f = STAT_FLAVOR[path] && STAT_FLAVOR[path][deltas[i].k];
+    if(f) lines.push(deltas[i].d>0 ? f.up : f.down);
+  }
+  var moneyDiff = cur.money-snap.money;
+  if(moneyDiff>=15) lines.push("荷包明顯厚了一圈，手頭寬裕不少。");
+  else if(moneyDiff<=-15) lines.push("錢包一路失血，手頭越來越緊。");
+  var fameDiff = cur.fame-snap.fame;
+  if(fameDiff>=5) lines.push("名字被越來越多人記住，走到哪都有人多看一眼。");
+  if(salesDiff>0) lines.push("銷量數字持續往上跳，業界都在討論這個名字。");
+  if(lines.length===0) lines.push("這段日子過得算平順，沒有太大的起伏，但也在一點一滴地累積。");
+  return lines;
+}
+
 function stageSummaryHTML(finishedStage){
   var snap = S.stageStartSnapshot;
   if(!snap) return "";
@@ -1873,9 +1946,32 @@ function stageSummaryHTML(finishedStage){
   var salesLine = salesDiff>0
     ? '<p class="stage-sales-highlight">這個階段賣出了 '+salesDiff+' 萬冊，業界都在討論這個數字。</p>'
     : "";
+  var narrative = periodNarrative(S.path, snap, {stats:S.stats, money:S.money, fame:S.fame}, salesDiff).map(esc).join(" ");
   return '<div class="entry stage-summary"><div class="etitle">'+esc(finishedStage.label)+' 結算</div>'+
-    (parts.length ? '<div class="delta">'+parts.join("")+'</div>' : '<p style="color:var(--dim);font-size:.85rem;margin:0;">這個階段沒有太大的起伏。</p>')+
+    '<p class="stage-narrative">'+narrative+'</p>'+
+    (parts.length ? '<div class="delta">'+parts.join("")+'</div>' : "")+
     salesLine+
+    '</div>';
+}
+
+function yearSummaryHTML(){
+  var snap = S.yearStartSnapshot;
+  if(!snap) return "";
+  var order = PATHS[S.path].order, labels = PATHS[S.path].labels;
+  var parts = [];
+  order.forEach(function(k){
+    var diff = S.stats[k]-snap.stats[k];
+    if(diff!==0) parts.push('<span class="'+(diff>0?"pos":"neg")+'">'+esc(labels[k])+' '+(diff>0?"+":"")+diff+'</span>');
+  });
+  var moneyDiff = S.money-snap.money;
+  if(moneyDiff!==0) parts.push('<span class="'+(moneyDiff>0?"pos":"neg")+'">財力 '+(moneyDiff>0?"+":"")+moneyDiff+'萬</span>');
+  var fameDiff = S.fame-snap.fame;
+  if(fameDiff!==0) parts.push('<span class="'+(fameDiff>0?"pos":"neg")+'">知名度 '+(fameDiff>0?"+":"")+fameDiff+'</span>');
+  var salesDiff = S.salesTally-snap.sales;
+  var narrative = periodNarrative(S.path, snap, {stats:S.stats, money:S.money, fame:S.fame}, salesDiff).map(esc).join(" ");
+  return '<div class="entry year-summary"><div class="etitle">'+S.age+' 歲　年度回顧</div>'+
+    '<p class="year-narrative">'+narrative+'</p>'+
+    (parts.length ? '<div class="delta">'+parts.join("")+'</div>' : "")+
     '</div>';
 }
 
@@ -1888,6 +1984,7 @@ function poolForYear(){
 function startYear(){
   S.phase="alloc";
   S.eventsThisYear=0;
+  snapshotYear();
   S.allocPool = poolForYear();
   S.allocSpent = {a:0,b:0,c:0,d:0,e:0};
   if(S.stageIdx>0 || S.turnInStage>0){
@@ -2057,6 +2154,7 @@ function continueAfterEvent(){
 }
 
 function afterYear(){
+  S.entries.push(yearSummaryHTML());
   if(checkBurnoutCrisis()) return;
   S.turnInStage++;
   S.age++;
