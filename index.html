@@ -465,7 +465,17 @@ var TICKERS = [
   "產業快訊：翻譯獎揭曉，得主是三年前就已讀不回的那位。",
   "產業快訊：某出版社老闆受訪表示「我們就是一群愛書的傻子」，員工薪資單沉默。",
   "產業快訊：紙價再度調漲，印刷廠老闆嘆氣的分貝也調漲。",
-  "產業快訊：某書店貓過世，全國哀悼聲量大於多數新書上市。"
+  "產業快訊：某書店貓過世，全國哀悼聲量大於多數新書上市。",
+  "產業快訊：出版業薪資調查出爐，網友熱議「這樣還有人願意做」。",
+  "產業快訊：某書店改裝成打卡熱點，愛書人抱怨「找不到書在哪」。",
+  "產業快訊：AI 翻譯軟體更新，譯者社群一片哀號又一片觀望。",
+  "產業快訊：某暢銷作家宣布封筆退休，出版社股價應聲下跌一格心情。",
+  "產業快訊：圖書館借閱榜單出爐，冠軍書在書店銷量卻墊底。",
+  "產業快訊：某出版社慶祝成立週年，紀念活動預算比作者版稅還高。",
+  "產業快訊：獨立書店聯合發起「不打折運動」，響應者寥寥無幾。",
+  "產業快訊：某網路小說平台版權糾紛開庭，雙方律師都上了熱搜。",
+  "產業快訊：實體書展買氣回溫，業者感嘆「終於不用只靠線上撐了」。",
+  "產業快訊：某編輯在社群抱怨「作者又失聯了」，貼文被瘋狂轉發。"
 ];
 
 /* 虛構出版社名字（純惡搞諧音，非真實公司）：編輯／行銷路線的「任職公司」，會記進生涯記事 */
@@ -498,7 +508,7 @@ var BOOK_FAIRS = {
     {name:"台北國際書展", flavor:"少數能光明正大站上版權頁之外、被讀者認出來的場合。"}
   ],
   store:[
-    {name:"台北國際書展", flavor:"跟各家出版社業務面對面談進貨條件，比email往返有效率多了。"},
+    {name:"台北國際書展", flavor:"跟各家出版社業務面對面談進貨條件，比 Email 往返有效率多了。"},
     {name:"香港書展", flavor:"觀摩別人怎麼把攤位擠得水洩不通，順便挖幾個能帶回店裡的陳列點子。"},
     {name:"波隆那童書展", flavor:"專程飛去挑幾本國內還沒人代理的繪本，賭一把成為店裡的隱藏亮點。"}
   ]
@@ -601,19 +611,71 @@ EV({id:"pandemic", once:true, stageMax:2,
       result:"省下的每一分錢都很有感，但撐過去的過程也磨掉了不少精神。"}
   ]}),
 
-EV({id:"book_fair", repeat:true, weight:0.8, stageMin:2,
+/* 書展邀約：拆成 5 條路線各自獨立的事件（id 不同），因為 result 只能是靜態字串，要讓每條路線的參展結果讀起來
+   符合各自職權（編輯談版權、行銷做活動操盤、譯者被引介、作者辦簽書會、書店談進貨）就不能共用同一組 success/fail 文字。
+   加上 cooldownYears/maxOccurs：至少隔 2 年才會再抽到，一輪最多抽 3 次，避免像審查報告指出的「7 次書展」洗版感。 */
+EV({id:"book_fair_author", paths:["author"], repeat:true, weight:0.8, stageMin:2, cooldownYears:2, maxOccurs:3,
   title:"書展邀約",
-  desc:function(p){
-    var f = fairFor(p);
-    return "「"+f.name+"」的邀請函躺在信箱裡。"+f.flavor+p.name+"得決定要不要排開手邊的事，飛一趟過去。";
-  },
+  desc:function(p){ var f=fairFor(p); return "「"+f.name+"」的邀請函躺在信箱裡。"+f.flavor+p.name+"得決定要不要排開手邊的事，飛一趟過去。"; },
   choices:[
     {label:"排開行程，全力參展", style:"bold",
       chance:function(p){ return clamp(0.3+(p.stats.c+p.stats.a)/300, 0.2, 0.65); },
       success:{delta:{c:8, money:10, fame:4, d:-10}, flag:"attendedFair",
-        result:"這一趟沒有白跑，攤位前談成的合作比預期扎實，只是回程整個人也跟著虛脫。"},
+        result:"簽書會排得比預期熱鬧，讀者面對面的反應比任何一篇書評都更有說服力，只是回程整個人也跟著虛脫。"},
       fail:{delta:{money:-8, d:-14},
-        result:"人潮洶湧地跑了一整趟，最後卻沒能真的談成什麼，只留下一身的疲憊跟一筆差旅費。"}},
+        result:"排隊人潮終究沒能換成什麼實質收穫，倒是留下一身的疲憊跟一筆機票錢。"}},
+    {label:"婉拒邀請，先顧好手邊的事", delta:{d:3}, style:"safe",
+      result:"婉拒之後日子照常，只是滑開社群，看著同業曬出的書展照片，心裡還是有一點點不是滋味。"}
+  ]}),
+EV({id:"book_fair_editor", paths:["editor"], repeat:true, weight:0.8, stageMin:2, cooldownYears:2, maxOccurs:3,
+  title:"書展邀約",
+  desc:function(p){ var f=fairFor(p); return "「"+f.name+"」的邀請函躺在信箱裡。"+f.flavor+p.name+"得決定要不要排開手邊的事，飛一趟過去。"; },
+  choices:[
+    {label:"排開行程，全力參展", style:"bold",
+      chance:function(p){ return clamp(0.3+(p.stats.c+p.stats.a)/300, 0.2, 0.65); },
+      success:{delta:{c:10, fame:5, d:-10}, flag:"attendedFair",
+        result:"版權洽談比預期順利，帶回去的合作備忘錄比名片還有份量，只是回程整個人也跟著虛脫。"},
+      fail:{delta:{d:-14},
+        result:"名片換了一整疊，回去整理才發現真正能推進的案子沒幾個，出差費是公司出的，累的是自己的。"}},
+    {label:"婉拒邀請，先顧好手邊的事", delta:{d:3}, style:"safe",
+      result:"婉拒之後日子照常，只是滑開社群，看著同業曬出的書展照片，心裡還是有一點點不是滋味。"}
+  ]}),
+EV({id:"book_fair_marketing", paths:["marketing"], repeat:true, weight:0.8, stageMin:2, cooldownYears:2, maxOccurs:3,
+  title:"書展邀約",
+  desc:function(p){ var f=fairFor(p); return "「"+f.name+"」的邀請函躺在信箱裡。"+f.flavor+p.name+"得決定要不要排開手邊的事，飛一趟過去。"; },
+  choices:[
+    {label:"排開行程，全力參展", style:"bold",
+      chance:function(p){ return clamp(0.3+(p.stats.c+p.stats.a)/300, 0.2, 0.65); },
+      success:{delta:{c:10, fame:5, d:-10}, flag:"attendedFair",
+        result:"攤位操盤跟快閃活動的效果比預期扎實，回程路上手機還在跳話題通知，只是整個人也跟著虛脫。"},
+      fail:{delta:{d:-14},
+        result:"活動忙進忙出一整天，聲量卻沒真的燒起來，出差費是公司出的，累的是自己的。"}},
+    {label:"婉拒邀請，先顧好手邊的事", delta:{d:3}, style:"safe",
+      result:"婉拒之後日子照常，只是滑開社群，看著同業曬出的書展照片，心裡還是有一點點不是滋味。"}
+  ]}),
+EV({id:"book_fair_translator", paths:["translator"], repeat:true, weight:0.8, stageMin:2, cooldownYears:2, maxOccurs:3,
+  title:"書展邀約",
+  desc:function(p){ var f=fairFor(p); return "「"+f.name+"」的邀請函躺在信箱裡。"+f.flavor+p.name+"得決定要不要排開手邊的事，飛一趟過去。"; },
+  choices:[
+    {label:"排開行程，全力參展", style:"bold",
+      chance:function(p){ return clamp(0.3+(p.stats.c+p.stats.a)/300, 0.2, 0.65); },
+      success:{delta:{c:8, money:10, fame:4, d:-10}, flag:"attendedFair",
+        result:"這次總算不是隱形人——編輯主動介紹了幾個新案源，只是回程整個人也跟著虛脫。"},
+      fail:{delta:{money:-8, d:-14},
+        result:"在展場邊緣晃了一整天，介紹來介紹去終究沒談成什麼，只留下一身的疲憊跟一筆機票錢。"}},
+    {label:"婉拒邀請，先顧好手邊的事", delta:{d:3}, style:"safe",
+      result:"婉拒之後日子照常，只是滑開社群，看著同業曬出的書展照片，心裡還是有一點點不是滋味。"}
+  ]}),
+EV({id:"book_fair_store", paths:["store"], repeat:true, weight:0.8, stageMin:2, cooldownYears:2, maxOccurs:3,
+  title:"書展邀約",
+  desc:function(p){ var f=fairFor(p); return "「"+f.name+"」的邀請函躺在信箱裡。"+f.flavor+p.name+"得決定要不要排開手邊的事，飛一趟過去。"; },
+  choices:[
+    {label:"排開行程，全力參展", style:"bold",
+      chance:function(p){ return clamp(0.3+(p.stats.c+p.stats.a)/300, 0.2, 0.65); },
+      success:{delta:{c:8, money:10, fame:4, d:-10}, flag:"attendedFair",
+        result:"跟幾家出版社業務談成的進貨條件比預期漂亮，回去可以喘口氣，只是整個人也跟著虛脫。"},
+      fail:{delta:{money:-8, d:-14},
+        result:"攤位逛了一整天，回去盤點才發現談成的條件沒比平常好多少，只留下一身的疲憊跟一筆差旅費。"}},
     {label:"婉拒邀請，先顧好手邊的事", delta:{d:3}, style:"safe",
       result:"婉拒之後日子照常，只是滑開社群，看著同業曬出的書展照片，心裡還是有一點點不是滋味。"}
   ]}),
@@ -1068,7 +1130,7 @@ EV({id:"headhunted", paths:["editor","marketing"], stageMin:3, once:true, weight
   title:"獵頭找上門",
   desc:function(p){ return "一位獵頭主動聯絡"+p.name+"，開出的職級和薪水都比現職漂亮不少，只是要從頭適應一個新團隊。"; },
   choices:[
-    {label:"跳槽到對家，換一個更高的位置", delta:{money:10, fame:4, c:-4}, style:"bold", flag:"jumped", newCompany:true,
+    {label:"跳槽到競爭公司，換一個更高的位置", delta:{money:10, fame:4, c:-4}, style:"bold", flag:"jumped", newCompany:true,
       result:"新位置確實風光，但重新累積信任的過程，比想像中磨人。"},
     {label:"留下來，繼續在熟悉的地方熬資歷", delta:{d:3, c:2}, style:"safe",
       result:"留下來的決定沒有大起伏，只是那個更高的位置，後來想起時偶爾會想「如果當初」。"}
@@ -1109,7 +1171,7 @@ EV({id:"moonlight", paths:["editor"], stageMin:2, title:"偷偷接的外稿",
 
 EV({id:"author_poached", paths:["editor"], stageMin:2,
   title:"心愛的作者被挖角",
-  desc:function(p){ return p.name+"一手栽培多年的作者，被對家出版社用高額預付金挖走，連招呼都沒打一聲。"; },
+  desc:function(p){ return p.name+"一手栽培多年的作者，被競爭出版社用高額預付金挖走，連招呼都沒打一聲。"; },
   choices:[
     {label:"打電話關心，體面道別", delta:{c:4, d:-3}, style:"safe",
       result:"體面地道了別，這個作者後來在受訪時，還是提到了當年帶他入行的人。"},
@@ -1158,12 +1220,12 @@ EV({id:"meme_viral", paths:["marketing"], title:"迷因帳號意外爆紅",
     {label:"趁勝追擊，加開限量周邊", delta:{money:10, fame:10, d:-3}, style:"bold",
       result:"周邊上架後秒殺，這波流量總算被實實在在地變成了業績。"},
     {label:"保守應對，怕曇花一現後被檢視", delta:{fame:5, d:2}, style:"safe",
-      result:"保守處理讓熱度平穩落地，雖然少賺了一波，但也沒留下把柄。"}
+      result:"保守處理讓熱度平穩收尾，雖然少賺了一波，但也沒留下把柄。"}
   ]}),
 
 EV({id:"kol_greedy", paths:["marketing"], repeat:true, title:"獅子大開口的業配報價",
   desc:function(p){ return stale("獅子大開口的業配報價", [
-    "談了三週的合作網紅，臨時把報價翻了三倍，理由是「我現在漲粉很快」。",
+    "談了三週的合作網紅，臨時把報價翻了三倍，理由是「我現在粉絲數成長很快」。",
     "又一個網紅在簽約前臨時加價，"+p.name+"已經開始習慣這種談判節奏。",
     "這次的網紅報價開得更誇張，"+p.name+"連討價還價的力氣都快沒了。"
   ]); },
@@ -1188,7 +1250,7 @@ EV({id:"rainy_presser", paths:["marketing"], repeat:true, title:"下著雨的記
   ]}),
 
 EV({id:"burnout_sm", paths:["marketing"], title:"連續爆肝三個月的小編",
-  desc:function(p){ return p.name+"連續三個月每天緊盯後台數據到半夜，某天手滑把負面留言誤發成官方發文，瞬間衝上討論熱門。"; },
+  desc:function(p){ return p.name+"連續三個月每天緊盯後台成效到半夜，某天手滑把負面留言誤發成官方發文，瞬間衝上討論熱門。"; },
   choices:[
     {label:"迅速公關滅火、誠懇道歉", delta:{fame:-5, d:-2}, style:"safe",
       result:"滅火滅得算快，話題沒有燒太久，但那幾天的心跳應該破表了。"},
@@ -1200,7 +1262,7 @@ EV({id:"ad_burn", paths:["marketing"], repeat:true, stageMin:2, title:"廣告投
   desc:function(p){ return stale("廣告投放燒錢事件", [
     "數據顯示這波廣告投放的轉換率慘不忍睹，"+p.name+"看著燒掉的預算，主管的臉色比報表還難看。",
     "又一波廣告投放效果不如預期，"+p.name+"開始懷疑演算法是不是跟自己過不去。",
-    "這次的廣告數據依然難看，"+p.name+"對「再測一輪就好」這句話愈來愈沒信心。"
+    "這次的廣告成效數字依然難看，"+p.name+"對「再測一輪就好」這句話愈來愈沒信心。"
   ]); },
   choices:[
     {label:"即時喊停、重新調整受眾", delta:{money:-6, b:5}, style:"safe",
@@ -1224,7 +1286,7 @@ EV({id:"marketing_cannes", paths:["marketing"], stageMin:2, once:true,
     {label:"隨緣，交給評審決定", delta:{d:3, fame:2}, style:"safe",
       result:"平常心交給評審決定，日子照常過，這份入圍本身已經是一種肯定。"},
     {label:"找同業合作衝刺參賽作品品質", delta:{money:-8, c:5, b:3}, style:"safe",
-      result:"跟同業合作打磨參賽作品，過程學到不少，只是這份人情，往後大概要找機會還。"}
+      result:"跟同業合作精修參賽作品，過程學到不少，只是這份人情，往後大概要找機會還。"}
   ]}),
 
 EV({id:"campaign_hit", paths:["marketing"], stageMin:2, title:"意外做出年度話題企劃",
@@ -1253,11 +1315,11 @@ EV({id:"algorithm_change", paths:["marketing"], repeat:true, stageMin:2,
   desc:function(p){ return stale("演算法一夜大改", [
     "社群平台一夜之間改了演算法，"+p.name+"上一檔還好好的貼文觸及率，這檔直接腰斬。",
     "演算法又改版了，"+p.name+"開始覺得自己在追一個永遠追不上的東西。",
-    "這是今年第三次演算法大改，"+p.name+"乾脆把舊的打法筆記全部歸零重寫。"
+    "這是今年第三次演算法大改，"+p.name+"乾脆把舊的操作筆記全部歸零重寫。"
   ]); },
   choices:[
-    {label:"重新研究打法，砸時間測試", delta:{b:5, d:-3}, style:"bold",
-      result:"測試出新打法後觸及率慢慢回穩，只是這幾週幾乎沒有喘息時間。"},
+    {label:"重新研究操作方式，砸時間測試", delta:{b:5, d:-3}, style:"bold",
+      result:"測試出新操作方式後觸及率慢慢回穩，只是這幾週幾乎沒有喘息時間。"},
     {label:"加碼買廣告，用錢換觸及", delta:{money:-8, fame:3}, style:"safe",
       result:"花錢買到的觸及來得快，效果卻也跟著預算一起見底。"}
   ]}),
@@ -1292,7 +1354,7 @@ EV({id:"mt_pressure", paths:["translator"], repeat:true, stageMin:2, title:"「�
 EV({id:"translator_niche_down", paths:["translator"], once:true,
   requires:function(p){ return logCount("「潤一下機翻就好」")>=3; },
   title:"認真考慮只接機器做不來的稿子",
-  desc:function(p){ return "潤機翻的邀約愈來愈多，"+p.name+"開始認真想：要嘛跟著卷下去，要嘛乾脆只挑機器翻不好的類型接。"; },
+  desc:function(p){ return "潤機翻的邀約愈來愈多，"+p.name+"開始認真想：要嘛繼續被壓價接下去，要嘛乾脆只挑機器翻不好的類型接。"; },
   choices:[
     {label:"專攻文學性強、機器翻不好的類型", delta:{a:6, money:-4}, style:"safe",
       result:"案子確實變少了，但留下來的都是真正需要功力的稿子，讀起來也更像自己的作品。"},
@@ -1597,7 +1659,7 @@ EV({id:"store_world_feature", paths:["store"], stageMin:2, once:true,
   choices:[
     {label:"全力配合，重新佈置店面迎接拍攝", style:"bold",
       chance:function(p){ return clamp(0.3+p.stats.a/150, 0.2, 0.65); },
-      success:{delta:{fame:22, money:15, sales:40}, flag:"worldFeaturedStore",
+      success:{delta:{fame:26, money:20}, flag:"worldFeaturedStore",
         result:"報導刊出那天，訊息多到一整天沒空整理書架，全都在回覆遠道而來的訊息。"},
       fail:{delta:{fame:6}, result:"拍攝很順利，只是最後專題選了別間店，這次沒能上榜。"}},
     {label:"婉拒，怕打擾平常營運", delta:{d:3}, style:"safe",
@@ -1765,13 +1827,13 @@ EV({id:"give_up_raise", paths:["editor","marketing"], once:true,
     {label:"開始經營自己的斜槓收入", delta:{money:10, d:-4}, style:"bold",
       result:"下班後的時間被斜槓填滿，錢包確實鬆了一點，只是幾乎沒有真正休息的時候。"},
     {label:"死心，把心力都留給正職就好", delta:{d:4}, style:"safe",
-      result:"死心之後，反而不再為了加薪的事情內耗，日子過得平靜一些。"}
+      result:"死心之後，反而不再為了加薪的事情自我消磨，日子過得平靜一些。"}
   ]}),
 
 EV({id:"office_gossip", paths:["editor","marketing"], repeat:true,
   title:"尾牙上的耳語",
   desc:function(p){ return stale("尾牙上的耳語", [
-    "尾牙散場後的續攤場合，酒過三巡，"+p.name+"聽到不少業界八卦——誰家又要倒了、誰又跳槽去對家，真真假假難以分辨。",
+    "尾牙散場後的續攤場合，酒過三巡，"+p.name+"聽到不少業界八卦——誰家又要倒了、誰又跳槽去競爭公司，真真假假難以分辨。",
     "又一場續攤，"+p.name+"這次聽到的八卦，居然有一則跟自己有關。",
     "這次的耳語比較不一樣——是關於"+p.name+"自己的公司，真假還說不準。"
   ]); },
@@ -1840,6 +1902,9 @@ EV({id:"store_niche_fork", paths:["store"], once:true,
 var EVENTS_BY_ID = {};
 EVENTS.forEach(function(ev){ EVENTS_BY_ID[ev.id]=ev; });
 function getPendingEvent(){ return EVENTS_BY_ID[S.pendingEventId]; }
+/* 年度/階段回顧要挑「這段時間發生了什麼」，非 repeat 的一次性事件比例行的 repeat 事件更值得被記住 */
+var EVENT_ONCE_BY_TITLE = {};
+EVENTS.forEach(function(ev){ EVENT_ONCE_BY_TITLE[ev.title] = !!ev.once; });
 
 /* ---------- game state ---------- */
 var S = null;
@@ -1865,6 +1930,9 @@ function resumeProgress(){
   if(!saved) return;
   S = saved;
   if(!S.breakthroughTier) S.breakthroughTier = {a:0,b:0,c:0,d:0,e:0};
+  if(!S.breakthroughPeak) S.breakthroughPeak = {a:S.breakthroughTier.a,b:S.breakthroughTier.b,c:S.breakthroughTier.c,d:S.breakthroughTier.d,e:S.breakthroughTier.e};
+  if(!S.eventLastAge) S.eventLastAge = {};
+  if(S.lastTicker===undefined) S.lastTicker = null;
   var calls = S.rngCalls||0;
   setSeed(S.seed);
   S.rngCalls = 0;
@@ -1891,6 +1959,7 @@ function newGame(name, pathKey, background){
     flags:{},
     usedEvents:{},
     eventSeenCount:{},
+    eventLastAge:{},
     eventsThisYear:0,
     phase:"alloc",
     pendingEventId:null,
@@ -1908,7 +1977,9 @@ function newGame(name, pathKey, background){
     salesTally:0,
     stageStartSnapshot:null,
     yearStartSnapshot:null,
-    breakthroughTier:{a:0,b:0,c:0,d:0,e:0}
+    breakthroughTier:{a:0,b:0,c:0,d:0,e:0},
+    breakthroughPeak:{a:0,b:0,c:0,d:0,e:0},
+    lastTicker:null
   };
   setSeed(S.seed);
   if(pathKey==="editor" || pathKey==="marketing"){ S.company = pick(COMPANIES); }
@@ -1918,7 +1989,7 @@ function newGame(name, pathKey, background){
 function snapshotStage(){
   S.stageStartSnapshot = {
     stats:{a:S.stats.a,b:S.stats.b,c:S.stats.c,d:S.stats.d,e:S.stats.e},
-    money:S.money, fame:S.fame, sales:S.salesTally
+    money:S.money, fame:S.fame, sales:S.salesTally, age:S.age
   };
 }
 function snapshotYear(){
@@ -1968,15 +2039,40 @@ var STAT_FLAVOR = {
   }
 };
 
+/* 從這段期間的生涯記事裡，挑出 1-2 個「真的發生過的事」（賭贏/賭輸、大起大落、非例行的一次性事件優先），
+   讓回顧讀起來像「這段時間經歷了什麼」，不是只有數字翻譯。挑不出來才退回純數值敘述。 */
+function notableEventLines(logSlice){
+  var scored = (logSlice||[]).map(function(l){
+    var score = 0;
+    if(l.won===true) score += 3;
+    else if(l.won===false) score += 2;
+    if(l.tier==="up2"||l.tier==="down2") score += 2;
+    else if(l.tier==="up1"||l.tier==="down1") score += 1;
+    if(EVENT_ONCE_BY_TITLE[l.title]) score += 1;
+    return {l:l, score:score};
+  }).filter(function(o){ return o.score>=2; }).sort(function(a,b){ return b.score-a.score; });
+  var lines = [], usedTitles = {};
+  for(var i=0;i<scored.length && lines.length<2;i++){
+    var l = scored[i].l;
+    if(usedTitles[l.title]) continue;
+    usedTitles[l.title] = true;
+    if(l.won===true) lines.push("「"+l.title+"」這一局賭贏了，選擇「"+l.choice+"」這步棋走對了。");
+    else if(l.won===false) lines.push("「"+l.title+"」這次沒能賭對，「"+l.choice+"」的代價留得很明顯。");
+    else if(l.tier==="up2") lines.push("「"+l.title+"」是這段時間最亮眼的一筆，「"+l.choice+"」的選擇收穫扎實。");
+    else if(l.tier==="down2") lines.push("「"+l.title+"」是這段時間比較難熬的一關，「"+l.choice+"」這個決定後來讓人有點後悔。");
+    else lines.push("「"+l.title+"」也在這段時間發生了，選了「"+l.choice+"」。");
+  }
+  return lines;
+}
 /* 用階段/年度起訖的能力值差，挑出變動最大的 1-2 項配上文字敘述，
    不只給玩家看數字增減，也講清楚「文筆變好」具體是指什麼 */
-function periodNarrative(path, snap, cur, salesDiff){
+function periodNarrative(path, snap, cur, salesDiff, logSlice){
+  var lines = notableEventLines(logSlice);
   var order = PATHS[path].order;
   var deltas = order.map(function(k){ return {k:k, d:cur.stats[k]-snap.stats[k]}; })
     .filter(function(o){ return Math.abs(o.d)>=3; })
     .sort(function(a,b){ return Math.abs(b.d)-Math.abs(a.d); });
-  var lines = [];
-  for(var i=0;i<deltas.length && lines.length<2;i++){
+  for(var i=0;i<deltas.length && lines.length<3;i++){
     var f = STAT_FLAVOR[path] && STAT_FLAVOR[path][deltas[i].k];
     if(f) lines.push(deltas[i].d>0 ? f.up : f.down);
   }
@@ -2007,7 +2103,8 @@ function stageSummaryHTML(finishedStage){
   var salesLine = salesDiff>0
     ? '<p class="stage-sales-highlight">這個階段賣出了 '+salesDiff+' 萬冊，業界都在討論這個數字。</p>'
     : "";
-  var narrative = periodNarrative(S.path, snap, {stats:S.stats, money:S.money, fame:S.fame}, salesDiff).map(esc).join(" ");
+  var logSlice = S.log.filter(function(l){ return l.age>=snap.age && l.age<S.age; });
+  var narrative = periodNarrative(S.path, snap, {stats:S.stats, money:S.money, fame:S.fame}, salesDiff, logSlice).map(esc).join(" ");
   return '<div class="entry stage-summary"><div class="etitle">'+esc(finishedStage.label)+' 結算</div>'+
     '<p class="stage-narrative">'+narrative+'</p>'+
     (parts.length ? '<div class="delta">'+parts.join("")+'</div>' : "")+
@@ -2029,7 +2126,8 @@ function yearSummaryHTML(){
   var fameDiff = S.fame-snap.fame;
   if(fameDiff!==0) parts.push('<span class="'+(fameDiff>0?"pos":"neg")+'">知名度 '+(fameDiff>0?"+":"")+fameDiff+'</span>');
   var salesDiff = S.salesTally-snap.sales;
-  var narrative = periodNarrative(S.path, snap, {stats:S.stats, money:S.money, fame:S.fame}, salesDiff).map(esc).join(" ");
+  var logSlice = S.log.filter(function(l){ return l.age===S.age; });
+  var narrative = periodNarrative(S.path, snap, {stats:S.stats, money:S.money, fame:S.fame}, salesDiff, logSlice).map(esc).join(" ");
   return '<div class="entry year-summary"><div class="etitle">'+S.age+' 歲　年度回顧</div>'+
     '<p class="year-narrative">'+narrative+'</p>'+
     (parts.length ? '<div class="delta">'+parts.join("")+'</div>' : "")+
@@ -2082,6 +2180,9 @@ function eligibleEvents(){
     if(ev.paths.indexOf("all")===-1 && ev.paths.indexOf(S.path)===-1) return false;
     if(stageNo<ev.stageMin || stageNo>ev.stageMax) return false;
     if(ev.requires && !ev.requires(S)) return false;
+    if(ev.maxOccurs && (S.eventSeenCount[ev.id]||0)>=ev.maxOccurs) return false;
+    if(ev.cooldownYears && S.eventLastAge && S.eventLastAge[ev.id]!==undefined &&
+      (S.age-S.eventLastAge[ev.id])<ev.cooldownYears) return false;
     return true;
   });
 }
@@ -2112,12 +2213,16 @@ function drawEvent(){
   for(var i=0;i<pool.length;i++){ r-=effectiveWeight(pool[i]); if(r<=0){ chosen=pool[i]; break; } }
   S.usedEvents[chosen.id]=true;
   S.eventSeenCount[chosen.id] = (S.eventSeenCount[chosen.id]||0)+1;
+  if(chosen.cooldownYears){ S.eventLastAge[chosen.id] = S.age; }
+  if(rng()<0.4){
+    var tickerPool = TICKERS.filter(function(t){ return t!==S.lastTicker; });
+    var ticker = pick(tickerPool.length?tickerPool:TICKERS);
+    S.lastTicker = ticker;
+    S.entries.push('<div class="ticker"><b>快訊</b><span>'+esc(ticker)+'</span></div>');
+  }
   S.pendingEventId = chosen.id;
   S.pendingChoiceOrder = shuffledIndices(chosen.choices.length);
   S.phase="event";
-  if(rng()<0.4){
-    S.entries.push('<div class="ticker"><b>快訊</b><span>'+esc(pick(TICKERS))+'</span></div>');
-  }
   render(true);
 }
 
@@ -2204,7 +2309,8 @@ function resolveChoice(idx){
     '<div class="delta">'+(deltaHTML||'<span style="color:var(--dim);background:none;border:none;padding:0;">（沒有明顯變化）</span>')+'</div></div>'
   );
   checkBreakthroughs();
-  S.log.push({age:S.age, title:ev.title, choice:choice.label, company:companyAtEvent});
+  S.log.push({age:S.age, title:ev.title, choice:choice.label, company:companyAtEvent,
+    tier:verdict.tier, won:(choice.success&&choice.fail)?won:null, resultText:resultText});
   S.pendingEventId = null;
   S.phase="post";
   render(true);
@@ -2227,7 +2333,11 @@ function afterYear(){
     if(finishedStage.key==="rookie" && !S.hadNegativeMoneyEarly) unlockTrait("pennyPincher");
     S.stageIdx++;
     S.turnInStage=0;
-    if(S.stageIdx>=STAGES.length){ computeEnding(); return; }
+    if(S.stageIdx>=STAGES.length){
+      S.entries.push(stageSummaryHTML(finishedStage));
+      computeEnding();
+      return;
+    }
     var nextStage = STAGES[S.stageIdx];
     S.entries.push(stageSummaryHTML(finishedStage));
     S.entries.push('<div class="stagebreak">'+finishedStage.label+' 結束　·　邁入 '+nextStage.label+'</div>');
@@ -2352,15 +2462,14 @@ function unlockTrait(key){
     '<p>'+esc(t.desc)+'</p></div>'
   );
 }
-function gambleChance(base){
-  var c = base;
-  if(S && S.traits && S.traits.ironNerve) c += 0.08;
-  if(S && S.breakthroughTier){
-    var mastered = ["a","b","c","d","e"].some(function(k){ return S.breakthroughTier[k]>=2; });
-    if(mastered) c += 0.08; // 精通任一能力就給上限 +8%，不逐項疊加——批次模擬顯示隨機配點下 8 成局都會精通至少一項，逐項疊加會讓多數玩家不知不覺拿到 15-25% 的機率加成，稀缺感就沒了
-  }
-  return clamp(c, 0.05, 0.95);
+/* 回傳機率的各項組成，供 UI 顯示「基礎 X%＋精通 Y%＋膽識 Z%」的明細，不是只回一個總數 */
+function gambleChanceBreakdown(base){
+  var ironNerve = (S && S.traits && S.traits.ironNerve) ? 0.08 : 0;
+  var mastered = !!(S && S.breakthroughPeak && ["a","b","c","d","e"].some(function(k){ return S.breakthroughPeak[k]>=2; }));
+  var mastery = mastered ? 0.08 : 0; // 精通任一能力就給上限 +8%，不逐項疊加——批次模擬顯示隨機配點下 8 成局都會精通至少一項，逐項疊加會讓多數玩家不知不覺拿到 15-25% 的機率加成，稀缺感就沒了
+  return {base:base, ironNerve:ironNerve, mastery:mastery, total:clamp(base+ironNerve+mastery, 0.05, 0.95)};
 }
+function gambleChance(base){ return gambleChanceBreakdown(base).total; }
 function checkGambleTraits(won){
   if(won){
     S.gambleWinStreak = (S.gambleWinStreak||0)+1;
@@ -2390,63 +2499,63 @@ function checkAllocTraits(){
 var BREAKTHROUGH_UP = {
   author:{
     a:["文筆這陣子明顯練出手感了，同一個場景試著寫三次，第三次總是最順的那次。",
-       "文筆已經練到讀者一看開頭就認得出是你的味道，編輯開始用「這一段不用改」形容你的稿子。（往後的放手一搏，多一分底氣）"],
+       "文筆已經練到讀者一看開頭就認得出是你的味道，編輯開始用「這一段不用改」形容你的稿子。（往後的放手一搏，成功機率永久 +8%）"],
     b:["靈感這陣子源源不絕，走在路上隨手記的筆記，常常比正經構思出來的還好用。",
-       "靈感已經多到寫不完的地步，抽屜裡積了一堆隨手寫下的開頭，隨便一個拿出來都能撐成一本書。（往後的放手一搏，多一分底氣）"],
+       "靈感已經多到寫不完的地步，抽屜裡積了一堆隨手寫下的開頭，隨便一個拿出來都能撐成一本書。（往後的放手一搏，成功機率永久 +8%）"],
     c:["人脈這陣子悄悄鋪開了，出版圈的聚會上，開始有人主動走過來自我介紹。",
-       "人脈已經厚到不用自己開口找機會，很多合作邀約是別人幫你牽線來的。（往後的放手一搏，多一分底氣）"],
+       "人脈已經厚到不用自己開口找機會，很多合作邀約是別人幫你牽線來的。（往後的放手一搏，成功機率永久 +8%）"],
     d:["抗壓性這陣子練出來了，同樣的截稿壓力放在以前早就崩潰，現在卻還撐得住。",
-       "抗壓性已經練到很少人能比的地步，那些會壓垮同輩的截稿地獄，對你來說只是尋常的一週。（往後的放手一搏，多一分底氣）"],
+       "抗壓性已經練到很少人能比的地步，那些會壓垮同輩的截稿地獄，對你來說只是尋常的一週。（往後的放手一搏，成功機率永久 +8%）"],
     e:["運氣這陣子似乎特別站在你這邊，幾次差點開天窗的稿子，最後總能驚險趕上。",
-       "運氣已經好到同業開始開玩笑說你「帶賽反過來變帶財」，關鍵時刻，命運總是偏向你一點。（往後的放手一搏，多一分底氣）"]
+       "運氣已經好到同業開始開玩笑說你「帶賽反過來變帶財」，關鍵時刻，命運總是偏向你一點。（往後的放手一搏，成功機率永久 +8%）"]
   },
   editor:{
     a:["文字功力這陣子明顯練出來了，同一份稿子改到第三輪，改動的地方愈來愈少。",
-       "文字功力已經練到能一眼看穿一份稿子的問題在哪，作者開始說「被你改過的段落，讀起來就是不一樣」。（往後的放手一搏，多一分底氣）"],
+       "文字功力已經練到能一眼看穿一份稿子的問題在哪，作者開始說「被你改過的段落，讀起來就是不一樣」。（往後的放手一搏，成功機率永久 +8%）"],
     b:["選題眼光這陣子明顯準了，隨手翻過的投稿裡，開始能一眼挑出真正有潛力的那幾份。",
-       "選題眼光已經練到業務部私下都服氣的地步，你點頭的案子，成績通常不會太差。（往後的放手一搏，多一分底氣）"],
+       "選題眼光已經練到業務部私下都服氣的地步，你點頭的案子，成績通常不會太差。（往後的放手一搏，成功機率永久 +8%）"],
     c:["人脈這陣子悄悄拓寬了，版權會議上，開始有其他出版社的人主動來聊合作。",
-       "人脈已經厚到業界很多消息，你比公關部還早知道。（往後的放手一搏，多一分底氣）"],
+       "人脈已經厚到業界很多消息，你比公關部還早知道。（往後的放手一搏，成功機率永久 +8%）"],
     d:["抗壓性這陣子練出來了，同時壓著三本書進度的日子，居然也能穩穩撐過去。",
-       "抗壓性已經練到很少人能比的地步，那些會逼瘋新人編輯的爆肝週，對你來說已經是日常。（往後的放手一搏，多一分底氣）"],
+       "抗壓性已經練到很少人能比的地步，那些會逼瘋新人編輯的爆肝週，對你來說已經是日常。（往後的放手一搏，成功機率永久 +8%）"],
     e:["運氣這陣子似乎特別站在你這邊，幾次差點開天窗的印刷排程，最後總能驚險趕上。",
-       "運氣已經好到同事都說你「簽書運超強」，關鍵時刻，命運總是偏向你一點。（往後的放手一搏，多一分底氣）"]
+       "運氣已經好到同事都說你「簽書運超強」，關鍵時刻，命運總是偏向你一點。（往後的放手一搏，成功機率永久 +8%）"]
   },
   marketing:{
     a:["文案力這陣子明顯練出手感了，隨手寫的貼文文案，轉發數開始悄悄超過認真企劃過的那幾篇。",
-       "文案力已經練到一句話就能讓讀者掏錢的地步，同業私下都在研究你都怎麼下標。（往後的放手一搏，多一分底氣）"],
+       "文案力已經練到一句話就能讓讀者掏錢的地步，同業私下都在研究你都怎麼下標。（往後的放手一搏，成功機率永久 +8%）"],
     b:["企劃力這陣子明顯準了，提出的行銷提案，開始很少被主管打回票重寫。",
-       "企劃力已經練到能提前預判話題怎麼發酵的地步，你排的行銷時程表，業界開始拿來當範本抄。（往後的放手一搏，多一分底氣）"],
+       "企劃力已經練到能提前預判話題怎麼發酵的地步，你排的行銷時程表，業界開始拿來當範本抄。（往後的放手一搏，成功機率永久 +8%）"],
     c:["人脈這陣子悄悄拓寬了，通訊軟體裡，KOL 跟媒體窗口的名單愈存愈厚。",
-       "人脈已經厚到不用自己開口，很多業配跟合作邀約是對方主動找上門。（往後的放手一搏，多一分底氣）"],
+       "人脈已經厚到不用自己開口，很多業配跟合作邀約是對方主動找上門。（往後的放手一搏，成功機率永久 +8%）"],
     d:["抗壓性這陣子練出來了，同時追著三檔活動的進度，居然也能穩穩撐過去。",
-       "抗壓性已經練到很少人能比的地步，那些會逼瘋新人的檔期地獄，對你來說已經是日常。（往後的放手一搏，多一分底氣）"],
+       "抗壓性已經練到很少人能比的地步，那些會逼瘋新人的檔期地獄，對你來說已經是日常。（往後的放手一搏，成功機率永久 +8%）"],
     e:["運氣這陣子似乎特別站在你這邊，幾次差點翻車的活動，最後總能驚險過關。",
-       "運氣已經好到同事都說你「文案有神加持」，關鍵時刻，話題總是偏向你這邊炸開。（往後的放手一搏，多一分底氣）"]
+       "運氣已經好到同事都說你「文案有神加持」，關鍵時刻，話題總是偏向你這邊炸開。（往後的放手一搏，成功機率永久 +8%）"]
   },
   translator:{
     a:["外語力這陣子明顯練出來了，原文裡那些拐彎抹角的雙關語，開始能一眼看穿弦外之音。",
-       "外語力已經練到能挑出原文作者自己都沒發現的細節錯誤，出版社開始主動指名要你譯。（往後的放手一搏，多一分底氣）"],
+       "外語力已經練到能挑出原文作者自己都沒發現的細節錯誤，出版社開始主動指名要你譯。（往後的放手一搏，成功機率永久 +8%）"],
     b:["譯筆這陣子明顯順了，譯出來的句子開始有自己的節奏，不再只是逐字對應的翻譯腔。",
-       "譯筆已經練到讀者分不出這是翻譯還是創作的地步，書評開始特別點名「譯得漂亮」。（往後的放手一搏，多一分底氣）"],
+       "譯筆已經練到讀者分不出這是翻譯還是創作的地步，書評開始特別點名「譯得漂亮」。（往後的放手一搏，成功機率永久 +8%）"],
     c:["人脈這陣子悄悄拓寬了，開始有其他出版社的編輯主動聯繫，想談合作案。",
-       "人脈已經厚到不缺案子的地步，很多譯稿邀約是同業互相介紹來的。（往後的放手一搏，多一分底氣）"],
+       "人脈已經厚到不缺案子的地步，很多譯稿邀約是同業互相介紹來的。（往後的放手一搏，成功機率永久 +8%）"],
     d:["自律力這陣子練出來了，同時扛著兩本書的翻譯進度，居然也能穩穩按表操課。",
-       "自律力已經練到很少人能比的地步，那些會拖垮別人的多線並行案，對你來說已經是日常。（往後的放手一搏，多一分底氣）"],
+       "自律力已經練到很少人能比的地步，那些會拖垮別人的多線並行案，對你來說已經是日常。（往後的放手一搏，成功機率永久 +8%）"],
     e:["運氣這陣子似乎特別站在你這邊，幾次差點誤譯的段落，最後都在校對階段驚險攔下。",
-       "運氣已經好到同業都說你「接案運超強」，關鍵時刻，好案子總是偏向你這邊來。（往後的放手一搏，多一分底氣）"]
+       "運氣已經好到同業都說你「接案運超強」，關鍵時刻，好案子總是偏向你這邊來。（往後的放手一搏，成功機率永久 +8%）"]
   },
   store:{
     a:["品味這陣子明顯練出來了，選進來的書和小物，開始比較常被客人一眼看中。",
-       "品味已經練到熟客都信任的地步，很多人專程來就是想看你這次又選了什麼。（往後的放手一搏，多一分底氣）"],
+       "品味已經練到熟客都信任的地步，很多人專程來就是想看你這次又選了什麼。（往後的放手一搏，成功機率永久 +8%）"],
     b:["創意這陣子明顯活了起來，隨手佈置的一角，常常意外變成客人打卡的熱點。",
-       "創意已經練到別的店主都來取經的地步，你的陳列跟活動點子，開始被同業拿去參考。（往後的放手一搏，多一分底氣）"],
+       "創意已經練到別的店主都來取經的地步，你的陳列跟活動點子，開始被同業拿去參考。（往後的放手一搏，成功機率永久 +8%）"],
     c:["社交這陣子悄悄拓寬了，街坊鄰居跟熟客，開始會主動幫忙介紹新客人上門。",
-       "社交已經厚到不缺人脈的地步，很多資源跟合作邀約，是熟客主動幫忙牽線來的。（往後的放手一搏，多一分底氣）"],
+       "社交已經厚到不缺人脈的地步，很多資源跟合作邀約，是熟客主動幫忙牽線來的。（往後的放手一搏，成功機率永久 +8%）"],
     d:["體力這陣子練出來了，開店、搬書、盤點一條龍跑下來，居然也還能撐住不喊累。",
-       "體力已經練到很少人能比的地步，那些會累垮新手店主的進退貨旺季，對你來說已經是日常。（往後的放手一搏，多一分底氣）"],
+       "體力已經練到很少人能比的地步，那些會累垮新手店主的進退貨旺季，對你來說已經是日常。（往後的放手一搏，成功機率永久 +8%）"],
     e:["資金這陣子周轉得順了，進退貨的現金流，開始不用每次都算得那麼緊張。",
-       "資金已經厚到能從容應對淡季的地步，同業都在問你是怎麼把小店經營得這麼穩。（往後的放手一搏，多一分底氣）"]
+       "資金已經厚到能從容應對淡季的地步，同業都在問你是怎麼把小店經營得這麼穩。（往後的放手一搏，成功機率永久 +8%）"]
   }
 };
 var BREAKTHROUGH_DOWN = {
@@ -2503,21 +2612,27 @@ function pushBreakthroughCard(key, tier, up){
     '<p>'+esc(text)+'</p></div>'
   );
 }
-/* 每次能力值變動後都要呼叫，跨過 50/75 門檻觸發文字回饋；下滑要留 6 點緩衝避免在門檻附近反覆觸發 */
+/* 每次能力值變動後都要呼叫，跨過 50/75 門檻觸發文字回饋。
+   S.breakthroughPeak 記錄「這輩子曾經達到過的最高等級」，只升不降——精通後的 +8% 機率加成掛在這個峰值上，
+   不會因為之後小幅回落就悄悄消失，也不會因為又爬回同一個等級而重複跳出同一張卡片。
+   S.breakthroughTier 是「目前狀態」，下滑要跌破門檻下方 12 點才觸發退步卡，比原本 6 點的緩衝更能避免在門檻附近反覆橫跳。 */
 function checkBreakthroughs(){
-  if(!S || !S.breakthroughTier) return;
+  if(!S || !S.breakthroughTier || !S.breakthroughPeak) return;
   ["a","b","c","d","e"].forEach(function(k){
     var val = S.stats[k];
     var cur = S.breakthroughTier[k]||0;
+    var peak = S.breakthroughPeak[k]||0;
     var target = breakthroughTierFor(val);
-    if(target>cur){
+    if(target>peak){
+      S.breakthroughPeak[k] = target;
       S.breakthroughTier[k] = target;
       pushBreakthroughCard(k, target, true);
+    } else if(target>cur){
+      S.breakthroughTier[k] = target; // 回到曾經達到過的等級，已經宣告過一次了，不重複跳卡
     } else if(cur>=1){
-      var floor = cur===2 ? BREAKTHROUGH_THRESH[1]-6 : BREAKTHROUGH_THRESH[0]-6;
+      var floor = cur===2 ? BREAKTHROUGH_THRESH[1]-12 : BREAKTHROUGH_THRESH[0]-12;
       if(val<floor){
-        var newTier = breakthroughTierFor(val);
-        S.breakthroughTier[k] = newTier;
+        S.breakthroughTier[k] = breakthroughTierFor(val);
         pushBreakthroughCard(k, cur, false);
       }
     }
@@ -2789,7 +2904,7 @@ function storeEnding(){
     return {tag:"good", title:"預約制的選書工作室",
       text:S.name+"的店變小了，卻也變得更像自己。每一位上門的客人，都是專程為了這份挑剔的品味而來。"};
   }
-  if(S.salesTally>=40 && S.flags.worldFeaturedStore){
+  if(S.flags.worldFeaturedStore){
     return {tag:"great", title:"登上國際媒體的書店地標",
       text:S.name+"的店被國際媒體選進「全球最美書店」專題，報導刊出那天，訊息多到"+S.name+"一整天沒空整理書架。這條巷子，從此多了一個外國遊客也認得的地標。"};
   }
@@ -2900,8 +3015,13 @@ function render(scrollDown){
       var oddsHTML = "";
       if(c.success && c.fail){
         var baseChance = typeof c.chance==="function" ? c.chance(S) : (c.chance===undefined?0.5:c.chance);
-        var pct = Math.round(gambleChance(baseChance)*100);
-        oddsHTML = '<span class="odds">放手一搏 · 成功機率 '+pct+'%</span>';
+        var bd = gambleChanceBreakdown(baseChance);
+        var pct = Math.round(bd.total*100);
+        var breakdownBits = [];
+        if(bd.mastery>0) breakdownBits.push("精通 +"+Math.round(bd.mastery*100)+"%");
+        if(bd.ironNerve>0) breakdownBits.push("膽識 +"+Math.round(bd.ironNerve*100)+"%");
+        var breakdownText = breakdownBits.length ? "（基礎 "+Math.round(bd.base*100)+"%＋"+breakdownBits.join("＋")+"）" : "";
+        oddsHTML = '<span class="odds">放手一搏 · 成功機率 '+pct+'%'+esc(breakdownText)+'</span>';
       }
       return '<button class="choice" data-choice="'+i+'">'+esc(c.label)+oddsHTML+'</button>';
     }).join("")+'</div>';
@@ -3045,11 +3165,21 @@ function bindStart(){
 }
 
 /* ending */
+/* 遊戲進 ending phase 後 render() 只畫 renderEnding()，S.entries 裡的卡片（年度回顧／階段結算／突破卡）就再也看不到了——
+   這裡把最後一次的年度回顧跟最後一次的階段結算撈出來，補在結局頁，不然玩家永遠看不到生涯最後一段的回顧文字 */
+function lastEntryOfClass(cls){
+  for(var i=S.entries.length-1;i>=0;i--){
+    if(S.entries[i].indexOf('class="entry '+cls)!==-1) return S.entries[i];
+  }
+  return null;
+}
 function renderEnding(){
   var e = S.ending;
   var historyLines = S.log.map(function(l){
     return l.age+' 歲　'+(l.company?esc(l.company)+'　':'')+esc(l.title)+'　→　'+esc(l.choice);
   }).join("<br>");
+  var lastYear = lastEntryOfClass("year-summary");
+  var lastStage = lastEntryOfClass("stage-summary");
   return '<div class="startpage">'+
     '<div class="ending-icon-wrap">'+icon("trophy","ending-icon")+'</div>'+
     '<span class="ending-tag '+e.tag+'">Ending</span>'+
@@ -3061,6 +3191,7 @@ function renderEnding(){
       e.traits.map(function(t){ return '<div class="tcard"><div class="tname">'+icon("star")+esc(t.name)+'</div><div class="tdesc">'+esc(t.desc)+'</div></div>'; }).join("")+
       '</div>' : "")+
     statBarsHTML()+
+    ((lastYear||lastStage) ? '<div class="sub" style="margin-top:14px;">生涯終章回顧</div>'+(lastStage||"")+(lastYear||"") : "")+
     '<div class="sub" style="margin-top:14px;">生涯記事</div>'+
     '<div class="history">'+(historyLines||"（平淡的一生，沒留下什麼紀錄）")+'</div>'+
     '<div class="actions"><button class="primary" id="downloadCardBtn">下載結果卡（圖片）</button>'+
