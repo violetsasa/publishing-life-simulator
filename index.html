@@ -323,6 +323,12 @@ input[type=text]:focus-visible{ outline:2px solid var(--gold); outline-offset:1p
   background:var(--panel); border:1.5px solid var(--ink); color:var(--ink);
   padding:5px 13px; border-radius:999px;
 }
+.career-recent{ display:flex; flex-wrap:wrap; gap:6px; }
+.career-chip{
+  font-size:.68rem; font-weight:600; color:var(--dim);
+  background:var(--panel2); border:1px solid var(--rule);
+  padding:3px 10px; border-radius:999px;
+}
 .footer-note{ text-align:center; font-size:.66rem; color:var(--dim); margin-top:20px; letter-spacing:.02em; font-weight:600;}
 </style>
 
@@ -2077,6 +2083,29 @@ function loadProgress(){
 function clearProgress(){
   try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
 }
+
+/* ---------- 生涯紀錄：跨局的完局歷史，純記錄不影響任何機制或機率，保持「同種子＋同選擇＝同人生」不變 ---------- */
+var CAREER_LOG_KEY = "pls_career_log_v1";
+var CAREER_LOG_MAX = 50;
+function loadCareerLog(){
+  try{
+    var raw = localStorage.getItem(CAREER_LOG_KEY);
+    if(!raw) return [];
+    var arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function recordCareerLog(){
+  try{
+    var log = loadCareerLog();
+    log.push({
+      path:S.path, name:S.name, age:S.age, seed:S.seed,
+      title:S.ending.title, tag:S.ending.tag
+    });
+    if(log.length>CAREER_LOG_MAX) log = log.slice(log.length-CAREER_LOG_MAX);
+    localStorage.setItem(CAREER_LOG_KEY, JSON.stringify(log));
+  }catch(e){}
+}
 function resumeProgress(){
   var saved = loadProgress();
   if(!saved) return;
@@ -2902,6 +2931,7 @@ function computeEnding(){
   S.ending = out;
   S.ending.tags = computeTags();
   S.ending.traits = Object.keys(S.traits).filter(function(k){ return S.traits[k]; }).map(function(k){ return TRAIT_DEFS[k]; });
+  recordCareerLog();
   S.phase="ending";
   render(true);
 }
@@ -3342,10 +3372,25 @@ function renderStart(){
     '<div class="sub">新手須知</div>'+
     '<p style="margin:6px 0;">選一條路線，經歷 <b>14 年</b>的出版業生涯——新人期→衝刺期→巔峰期→衰退期，共四階段。</p>'+
     '<p style="margin:6px 0;">每年年初分配能力點數，接著會遇到<b>三次事件</b>（年初／仲春／盛夏／歲末其中三個時間點各觸發一次），每次都要做選擇。</p>'+
-    '<p style="margin:6px 0;">能力值不只是數字：帶「放手一搏」標籤的選項會直接顯示成功機率，機率會隨對應能力值升高而變好；能力值練到 <b>50／75</b> 還會觸發專屬的「能力突破」回饋。</p>'+
+    '<p style="margin:6px 0;">能力值不只是數字：帶「放手一搏」標籤的選項會直接顯示成功機率，機率會隨對應能力值升高而變好；能力值練到 <b>50／82</b> 還會觸發專屬的「能力突破」回饋。</p>'+
     '<p style="margin:0;">14 年結束後，依你的最終能力值、財力、知名度，以及過程中做出的選擇，會組合出專屬的生涯結局。</p>'+
     '</div>';
-  return resumeBlock+introBlock+'<div class="startpage">'+
+  var careerLog = loadCareerLog();
+  var careerBlock = "";
+  if(careerLog.length){
+    var counts = {author:0,editor:0,marketing:0,translator:0,store:0};
+    careerLog.forEach(function(e){ if(counts[e.path]!==undefined) counts[e.path]++; });
+    var countsText = Object.keys(PATHS).map(function(k){ return PATHS[k].label+'×'+(counts[k]||0); }).join('　');
+    var recent = careerLog.slice(-5).reverse().map(function(e){
+      return '<span class="career-chip">'+esc(PATHS[e.path].noun)+'・'+esc(e.title)+'・'+e.age+' 歲</span>';
+    }).join("");
+    careerBlock = '<div class="startpage career-block" style="margin-bottom:14px;">'+
+      '<div class="sub">生涯紀錄</div>'+
+      '<p style="margin:6px 0;">目前為止已完成 <b>'+careerLog.length+'</b> 局：'+countsText+'</p>'+
+      '<div class="career-recent">'+recent+'</div>'+
+      '</div>';
+  }
+  return resumeBlock+careerBlock+introBlock+'<div class="startpage">'+
     '<h2 class="title">角色設定</h2>'+
     '<div class="sub">Character Sheet</div>'+
     '<label class="field"><span class="lbl">筆名 / 姓名</span><input type="text" id="nameInput" placeholder="例如：林小記" maxlength="12"></label>'+
