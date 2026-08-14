@@ -276,6 +276,10 @@ input[type=text]:focus-visible{ outline:2px solid var(--gold); outline-offset:1p
   box-shadow:0 3px 0 rgba(34,55,74,.05), 0 4px 10px rgba(34,55,74,.06);
 }
 .pathcard:hover{ border-color:var(--accent, var(--ink)); transform:translateY(-3px); box-shadow:0 5px 0 rgba(34,55,74,.08), 0 10px 18px rgba(34,55,74,.12); }
+.pathcard:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; border-color:var(--accent, var(--ink)); }
+@media (max-width:480px){
+  .pathcard{ flex:1 1 100%; }
+}
 .pathcard.sel{ border-color:var(--accent, var(--ink)); background:var(--accent-tint, #fdf1de); transform:translateY(-2px); }
 .pathcard h3{ font-family:var(--font-display); margin:0 0 4px; font-size:1rem; color:var(--chalk); font-weight:700;}
 .pathcard p{ margin:0; font-size:.78rem; color:var(--dim); line-height:1.5; }
@@ -2672,7 +2676,7 @@ var BREAKTHROUGH_DOWN = {
     e:"資金這陣子明顯緊了，帳本愈翻愈心慌，連進新貨都得斤斤計較。"
   }
 };
-var BREAKTHROUGH_THRESH = [50, 75];
+var BREAKTHROUGH_THRESH = [50, 82]; // 精通門檻從 75 拉高到 82——75 對集中配點玩家太容易，多數輪都能在 stage 2 就達成，稀缺感不夠
 function breakthroughTierFor(val){
   if(val>=BREAKTHROUGH_THRESH[1]) return 2;
   if(val>=BREAKTHROUGH_THRESH[0]) return 1;
@@ -3193,7 +3197,7 @@ function renderStart(){
     var p = PATHS[k];
     var statNames = p.order.map(function(o){return p.labels[o];}).join(" ／ ");
     var col = PATH_COLOR[k];
-    return '<div class="pathcard" data-path="'+k+'" style="--accent:'+col.c+';--accent-tint:'+col.t+'"><div class="picon-wrap">'+icon(PATH_ICON[k],"picon")+'</div><h3>'+p.label+'</h3><p>'+p.blurb+'</p><div class="stats">'+statNames+'</div></div>';
+    return '<div class="pathcard" data-path="'+k+'" tabindex="0" role="button" aria-pressed="false" style="--accent:'+col.c+';--accent-tint:'+col.t+'"><div class="picon-wrap">'+icon(PATH_ICON[k],"picon")+'</div><h3>'+p.label+'</h3><p>'+p.blurb+'</p><div class="stats">'+statNames+'</div></div>';
   }).join("");
   var saved = loadProgress();
   var resumeBlock = "";
@@ -3237,12 +3241,25 @@ function bindStart(){
   if(discardBtn) discardBtn.addEventListener("click", function(){ clearProgress(); render(); });
 
   var picker = document.getElementById("pathPicker");
-  picker.addEventListener("click", function(e){
-    var card = e.target.closest(".pathcard");
+  function selectPathCard(card){
     if(!card) return;
     startPath = card.getAttribute("data-path");
-    Array.prototype.forEach.call(picker.children, function(c){ c.classList.toggle("sel", c===card); });
+    Array.prototype.forEach.call(picker.children, function(c){
+      var sel = c===card;
+      c.classList.toggle("sel", sel);
+      c.setAttribute("aria-pressed", sel?"true":"false");
+    });
     document.getElementById("bgWrap").innerHTML = bgPickerHTML();
+  }
+  picker.addEventListener("click", function(e){
+    selectPathCard(e.target.closest(".pathcard"));
+  });
+  picker.addEventListener("keydown", function(e){
+    if(e.key!=="Enter" && e.key!==" " && e.key!=="Spacebar") return;
+    var card = e.target.closest(".pathcard");
+    if(!card) return;
+    e.preventDefault();
+    selectPathCard(card);
   });
   bindSeedArea();
   document.getElementById("startBtn").addEventListener("click", function(){
@@ -3283,8 +3300,8 @@ function renderEnding(){
       '</div>' : "")+
     statBarsHTML()+
     ((lastYear||lastStage) ? '<div class="sub" style="margin-top:14px;">生涯終章回顧</div>'+(lastStage||"")+(lastYear||"") : "")+
-    '<div class="sub" style="margin-top:14px;">生涯記事</div>'+
-    '<div class="history">'+(historyLines||"（平淡的一生，沒留下什麼紀錄）")+'</div>'+
+    '<details class="history-details" style="margin-top:14px;"><summary class="sub" style="cursor:pointer;">生涯記事（共 '+S.log.length+' 則，點開展開）</summary>'+
+    '<div class="history">'+(historyLines||"（平淡的一生，沒留下什麼紀錄）")+'</div></details>'+
     '<div class="actions"><button class="primary" id="downloadCardBtn">下載結果卡（圖片）</button>'+
     '<button class="ghost" id="restartBtn">重新開始人生</button>'+
     '<button class="ghost" id="sameSeedBtn">用同一顆種子再來一次</button></div>'+
