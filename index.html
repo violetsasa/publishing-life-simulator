@@ -134,6 +134,14 @@ button{ font:inherit; }
 .entry.slump .etitle{ color:var(--bad); display:flex; align-items:center; gap:6px; }
 .entry.slump .slump-icon{ width:18px; height:auto; color:var(--bad); }
 .entry.slump p{ font-size:.86rem; color:var(--dim); }
+.entry.debt-warn{ border-color:var(--bad); border-width:2px; background:rgba(201,79,79,.08); }
+.entry.debt-warn .etitle{ color:var(--bad); display:flex; align-items:center; gap:6px; }
+.entry.debt-warn .debt-icon{ width:18px; height:auto; color:var(--bad); }
+.entry.debt-warn p{ font-size:.86rem; color:var(--dim); }
+.entry.debt-relief{ border-color:var(--good); border-width:2px; background:rgba(63,143,95,.08); }
+.entry.debt-relief .etitle{ color:var(--good); display:flex; align-items:center; gap:6px; }
+.entry.debt-relief .relief-icon{ width:18px; height:auto; color:var(--good); }
+.entry.debt-relief p{ font-size:.86rem; color:var(--dim); }
 .traitlist{ display:flex; flex-direction:column; gap:8px; margin:4px 0 20px; }
 .traitlist .tcard{ border:1.5px solid var(--ink); border-radius:12px; padding:10px 12px; background:#fdf0cf; }
 .traitlist .tname{ font-family:var(--font-display); font-size:.92rem; color:var(--ink); display:flex; align-items:center; gap:6px; margin-bottom:2px; font-weight:700; }
@@ -279,6 +287,7 @@ input[type=text]:focus-visible{ outline:2px solid var(--gold); outline-offset:1p
 /* allocator (lives in footer) */
 .alloc-row{ display:flex; align-items:center; gap:10px; padding:6px 0; }
 .alloc-name{ width:78px; font-size:.74rem; font-weight:600; color:var(--dim); flex-shrink:0;}
+.alloc-cap-tag{ font-size:.62rem; font-weight:600; color:var(--gold); background:rgba(240,180,41,.15); border:1px solid var(--gold); border-radius:999px; padding:1px 5px; white-space:nowrap; }
 .alloc-bar{ flex:1; height:8px; background:var(--rule); opacity:.9; border-radius:4px; overflow:hidden; background-color:var(--panel2); border:1px solid var(--rule); }
 .alloc-bar i{ display:block; height:100%; background:var(--gold); }
 .alloc-btns{ display:flex; gap:4px; }
@@ -548,9 +557,14 @@ function applyDelta(p, delta){
 
 /* ---------- narrative helpers (used inside EVENTS, so declared early) ---------- */
 function logCountRef(title){ return S.log.filter(function(l){ return l.title===title; }).length; }
+/* 抽完所有變體文字後，不要死鎖在最後一句反覆重讀——在 variants[1..] 之間輪流（跳過第一句「第一次」專屬的新鮮感文字），
+   至少能在僅有的變體之間製造一點交替感，不必每個 repeat 事件都額外寫新文案才能緩解「一直讀到同一句」的疲乏感 */
 function stale(title, variants){
   var n = logCountRef(title);
-  return variants[Math.min(n, variants.length-1)];
+  if(n<variants.length) return variants[n];
+  if(variants.length<=1) return variants[0];
+  var cycleLen = variants.length-1;
+  return variants[1+((n-variants.length)%cycleLen)];
 }
 
 /* ---------- event pool ---------- */
@@ -1933,6 +1947,7 @@ function resumeProgress(){
   if(!S.breakthroughPeak) S.breakthroughPeak = {a:S.breakthroughTier.a,b:S.breakthroughTier.b,c:S.breakthroughTier.c,d:S.breakthroughTier.d,e:S.breakthroughTier.e};
   if(!S.eventLastAge) S.eventLastAge = {};
   if(S.lastTicker===undefined) S.lastTicker = null;
+  if(S.debtTier===undefined) S.debtTier = 0;
   var calls = S.rngCalls||0;
   setSeed(S.seed);
   S.rngCalls = 0;
@@ -1979,7 +1994,8 @@ function newGame(name, pathKey, background){
     yearStartSnapshot:null,
     breakthroughTier:{a:0,b:0,c:0,d:0,e:0},
     breakthroughPeak:{a:0,b:0,c:0,d:0,e:0},
-    lastTicker:null
+    lastTicker:null,
+    debtTier:0
   };
   setSeed(S.seed);
   if(pathKey==="editor" || pathKey==="marketing"){ S.company = pick(COMPANIES); }
@@ -2160,6 +2176,7 @@ function startYear(){
     S.flags.hadDebtInterest = true;
     S.entries.push('<div class="ticker"><b>債務</b><span>信用卡循環利息又扣了 '+interest+' 萬，帳戶餘額持續探底。</span></div>');
   }
+  checkDebtTier();
   if(checkDebtCrisis()) return;
   render();
 }
@@ -2363,6 +2380,58 @@ function checkDebtCrisis(){
   return false;
 }
 
+/* ---------- 財務懸崖分級：破產線之前不再毫無感覺，跨過警訊/危機兩級門檻會有立即的文字＋數值回饋 ---------- */
+var DEBT_TIER_RATIO = [0.5, 0.8]; // 距離破產線的比例：50%＝財務吃緊，80%＝瀕臨破產
+function debtRatio(){
+  if(S.money>=0) return 0;
+  return clamp(S.money/bankruptThreshold(), 0, 1);
+}
+function debtTierFor(ratio){
+  if(ratio>=DEBT_TIER_RATIO[1]) return 2;
+  if(ratio>=DEBT_TIER_RATIO[0]) return 1;
+  return 0;
+}
+function pushDebtCard(tier, worsening){
+  var text;
+  if(worsening){
+    text = tier===1
+      ? S.name+"的帳戶餘額已經連續好幾個月沒有回正，每次點開對帳單都要先深呼吸一下。"
+      : S.name+"的財務狀況已經逼近懸崖邊緣，這陣子開始認真盤算，還有哪些東西能變現。";
+  } else {
+    text = tier===1
+      ? S.name+"的帳戶總算止血了，雖然還沒回正，但那種天天提心吊膽的感覺稍微鬆了一點。"
+      : S.name+"總算把最緊繃的那段財務危機撐過去了，帳戶還沒真的健康，但至少不用再天天算計著要賣什麼。";
+  }
+  S.entries.push(
+    '<div class="entry '+(worsening?"debt-warn":"debt-relief")+'"><div class="esub">'+S.age+' 歲 · '+(worsening?(tier===2?"財務危機":"財務吃緊"):"財務喘息")+'</div>'+
+    '<div class="etitle">'+icon("coin",(worsening?"debt-icon":"relief-icon"))+(worsening?(tier===2?"瀕臨破產":"入不敷出"):"財務回穩")+'</div>'+
+    '<p>'+esc(text)+'</p></div>'
+  );
+}
+/* 每年年初檢查一次（跟既有的循環利息判定同一節奏），跨過門檻才觸發卡片跟一次性數值代價，緩衝 0.15 避免在門檻附近反覆橫跳 */
+function checkDebtTier(){
+  if(!S) return;
+  var ratio = debtRatio();
+  var cur = S.debtTier||0;
+  var target = debtTierFor(ratio);
+  if(target>cur){
+    S.debtTier = target;
+    pushDebtCard(target, true);
+    if(target===1){ S.fame = clamp(S.fame-3, 0, 100); }
+    else if(target===2){
+      S.fame = clamp(S.fame-6, 0, 100);
+      var lo = (S.traits && S.traits.battleScarred) ? 16 : 0;
+      S.stats.d = clamp(S.stats.d-3, lo, 100);
+    }
+  } else if(cur>=1){
+    var floor = cur===2 ? DEBT_TIER_RATIO[1]-0.15 : DEBT_TIER_RATIO[0]-0.15;
+    if(ratio<floor){
+      S.debtTier = debtTierFor(ratio);
+      pushDebtCard(cur, false);
+    }
+  }
+}
+
 function checkBurnoutCrisis(){
   if(S.stats.d<=15){ S.lowGritStreak = (S.lowGritStreak||0)+1; }
   else{ S.lowGritStreak = 0; }
@@ -2382,9 +2451,11 @@ function continueFromStageEnd(){ startYear(); }
 function allocSpentTotal(){
   return Object.keys(S.allocSpent).reduce(function(s,k){return s+S.allocSpent[k];},0);
 }
+var ALLOC_PER_STAT_CAP = 5; // 單一能力一年最多加這麼多點，避免「全押同一項」比角色扮演式分散加點更有效率的雪球問題
 function allocInc(k){
   if(allocSpentTotal()>=S.allocPool) return;
   if(S.stats[k]+S.allocSpent[k]>=100) return;
+  if(S.allocSpent[k]>=ALLOC_PER_STAT_CAP) return;
   S.allocSpent[k]++;
   render();
 }
@@ -2467,7 +2538,8 @@ function gambleChanceBreakdown(base){
   var ironNerve = (S && S.traits && S.traits.ironNerve) ? 0.08 : 0;
   var mastered = !!(S && S.breakthroughPeak && ["a","b","c","d","e"].some(function(k){ return S.breakthroughPeak[k]>=2; }));
   var mastery = mastered ? 0.08 : 0; // 精通任一能力就給上限 +8%，不逐項疊加——批次模擬顯示隨機配點下 8 成局都會精通至少一項，逐項疊加會讓多數玩家不知不覺拿到 15-25% 的機率加成，稀缺感就沒了
-  return {base:base, ironNerve:ironNerve, mastery:mastery, total:clamp(base+ironNerve+mastery, 0.05, 0.95)};
+  var debtPenalty = (S && S.debtTier>=2) ? -0.05 : 0; // 瀕臨破產時判斷力也跟著打折，呼應財務懸崖分級
+  return {base:base, ironNerve:ironNerve, mastery:mastery, debtPenalty:debtPenalty, total:clamp(base+ironNerve+mastery+debtPenalty, 0.05, 0.95)};
 }
 function gambleChance(base){ return gambleChanceBreakdown(base).total; }
 function checkGambleTraits(won){
@@ -3020,6 +3092,7 @@ function render(scrollDown){
         var breakdownBits = [];
         if(bd.mastery>0) breakdownBits.push("精通 +"+Math.round(bd.mastery*100)+"%");
         if(bd.ironNerve>0) breakdownBits.push("膽識 +"+Math.round(bd.ironNerve*100)+"%");
+        if(bd.debtPenalty<0) breakdownBits.push("財務壓力 "+Math.round(bd.debtPenalty*100)+"%");
         var breakdownText = breakdownBits.length ? "（基礎 "+Math.round(bd.base*100)+"%＋"+breakdownBits.join("＋")+"）" : "";
         oddsHTML = '<span class="odds">放手一搏 · 成功機率 '+pct+'%'+esc(breakdownText)+'</span>';
       }
@@ -3072,12 +3145,13 @@ function renderAllocFooter(){
   var spent = allocSpentTotal();
   var rows = order.map(function(k){
     var val = S.stats[k]+S.allocSpent[k];
-    return '<div class="alloc-row"><span class="alloc-name">'+labels[k]+'</span>'+
+    var atCap = S.allocSpent[k]>=ALLOC_PER_STAT_CAP;
+    return '<div class="alloc-row"><span class="alloc-name">'+labels[k]+(atCap?' <span class="alloc-cap-tag">單年上限</span>':'')+'</span>'+
       '<div class="alloc-bar"><i style="width:'+clamp(val,0,100)+'%"></i></div>'+
       '<div class="alloc-btns"><button data-dec="'+k+'" '+(S.allocSpent[k]<=0?"disabled":"")+'>−</button>'+
-      '<button data-inc="'+k+'" '+((spent>=S.allocPool||val>=100)?"disabled":"")+'>＋</button></div></div>';
+      '<button data-inc="'+k+'" '+((spent>=S.allocPool||val>=100||atCap)?"disabled":"")+'>＋</button></div></div>';
   }).join("");
-  return '<p class="hint">年初：這一年能投入的心力有限，分配給誰，決定接下來會遇上什麼。</p>'+
+  return '<p class="hint">年初：這一年能投入的心力有限，分配給誰，決定接下來會遇上什麼。單一能力一年最多投入 '+ALLOC_PER_STAT_CAP+' 點，逼自己多方發展。</p>'+
     '<div class="pool">可分配點數：'+(S.allocPool-spent)+' / '+S.allocPool+'</div>'+
     rows+
     '<div class="actions"><button class="primary" id="confirmAlloc">確定分配，迎接這一年</button></div>';
@@ -3121,7 +3195,14 @@ function renderStart(){
       '<div class="actions"><button class="primary" id="resumeBtn">繼續上次的旅程</button>'+
       '<button class="ghost" id="discardSaveBtn">捨棄，重新開始</button></div></div>';
   }
-  return resumeBlock+'<div class="startpage">'+
+  var introBlock = saved ? "" : '<div class="startpage intro-block" style="margin-bottom:14px;">'+
+    '<div class="sub">新手須知</div>'+
+    '<p style="margin:6px 0;">選一條路線，經歷 <b>14 年</b>的出版業生涯——新人期→衝刺期→巔峰期→衰退期，共四階段。</p>'+
+    '<p style="margin:6px 0;">每年年初分配能力點數，接著會遇到<b>三次事件</b>（年初／仲春／盛夏／歲末其中三個時間點各觸發一次），每次都要做選擇。</p>'+
+    '<p style="margin:6px 0;">能力值不只是數字：帶「放手一搏」標籤的選項會直接顯示成功機率，機率會隨對應能力值升高而變好；能力值練到 <b>50／75</b> 還會觸發專屬的「能力突破」回饋。</p>'+
+    '<p style="margin:0;">14 年結束後，依你的最終能力值、財力、知名度，以及過程中做出的選擇，會組合出專屬的生涯結局。</p>'+
+    '</div>';
+  return resumeBlock+introBlock+'<div class="startpage">'+
     '<h2 class="title">角色設定</h2>'+
     '<div class="sub">Character Sheet</div>'+
     '<label class="field"><span class="lbl">筆名 / 姓名</span><input type="text" id="nameInput" placeholder="例如：林小記" maxlength="12"></label>'+
