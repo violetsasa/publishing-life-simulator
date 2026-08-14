@@ -297,6 +297,7 @@ input[type=text]:focus-visible{ outline:2px solid var(--gold); outline-offset:1p
 .alloc-row{ display:flex; align-items:center; gap:10px; padding:6px 0; }
 .alloc-name{ width:78px; font-size:.74rem; font-weight:600; color:var(--dim); flex-shrink:0;}
 .alloc-cap-tag{ font-size:.62rem; font-weight:600; color:var(--gold); background:rgba(240,180,41,.15); border:1px solid var(--gold); border-radius:999px; padding:1px 5px; white-space:nowrap; }
+.alloc-high-tag{ color:var(--bad); background:rgba(201,79,79,.12); border-color:var(--bad); }
 .alloc-bar{ flex:1; height:8px; background:var(--rule); opacity:.9; border-radius:4px; overflow:hidden; background-color:var(--panel2); border:1px solid var(--rule); }
 .alloc-bar i{ display:block; height:100%; background:var(--gold); }
 .alloc-btns{ display:flex; gap:4px; }
@@ -1289,13 +1290,13 @@ EV({id:"burnout_sm", paths:["marketing"], title:"連續爆肝三個月的小編"
 
 EV({id:"ad_burn", paths:["marketing"], repeat:true, stageMin:2, title:"廣告投放燒錢事件",
   desc:function(p){ return stale("廣告投放燒錢事件", [
-    "數據顯示這波廣告投放的轉換率慘不忍睹，"+p.name+"看著燒掉的預算，主管的臉色比報表還難看。",
+    "成效數字顯示這波廣告投放的轉換率慘不忍睹，"+p.name+"看著燒掉的預算，主管的臉色比報表還難看。",
     "又一波廣告投放效果不如預期，"+p.name+"開始懷疑演算法是不是跟自己過不去。",
     "這次的廣告成效數字依然難看，"+p.name+"對「再測一輪就好」這句話愈來愈沒信心。"
   ]); },
   choices:[
     {label:"即時喊停、重新調整受眾", delta:{money:-6, b:5}, style:"safe",
-      result:"即時喊停止損，重新調整過的下一波，數據明顯好看不少。"},
+      result:"即時喊停止損，重新調整過的下一波，成效數字明顯好看不少。"},
     {label:"賭一把繼續燒到底", style:"bold",
       chance:function(p){ return clamp(0.35+p.stats.b/150, 0.2, 0.65); },
       success:{delta:{money:-16, fame:10}, result:"這波賭注最後真的燒出了聲量，主管的臉色總算緩和下來。"},
@@ -1944,16 +1945,16 @@ EV({id:"publisher_folds", paths:["author"], stageMin:2,
       result:"不去糾結這筆爛帳，心裡反而輕鬆不少，只是想到那些庫存書大概要被銷毀，還是有點不捨。"}
   ]}),
 
-EV({id:"ghostwrite_offer", paths:["author"], stageMin:1,
-  title:"一份掛別人名字的代筆邀約",
-  desc:function(p){ return "經紀人轉來一份代筆邀約：幫一位知名人士捉刀寫自傳，稿費優渥，但書封上不會出現"+p.name+"的名字。"; },
+EV({id:"forced_sequel", paths:["author"], stageMin:2,
+  title:"出版社要求趕出賣座作品的續集",
+  desc:function(p){ return "上一本書意外賣得不錯，出版社等不及要簽下續集合約，只是"+p.name+"根本還沒想好接下來的故事要往哪走。"; },
   choices:[
-    {label:"接下，穩定的收入先顧好生活", delta:{money:16, a:-2, d:-3}, style:"safe",
-      result:"稿費確實解決了不少燃眉之急，只是每次看到那本書被討論，都得假裝自己跟這件事無關。"},
-    {label:"婉拒，堅持只寫掛自己名字的作品", delta:{d:2, a:2}, style:"bold",
-      result:"婉拒之後收入沒有比較寬裕，但每一個字都掛著自己的名字，這件事本身就是一種底氣。"},
-    {label:"談條件，爭取書裡一行不起眼的「文字協力」", delta:{money:10, c:3}, style:"safe",
-      result:"對方答應了這個不算過分的要求，那一行小字，後來成了履歷上一個只有內行人才看得懂的彩蛋。"}
+    {label:"先簽約，邊寫邊想", delta:{money:14, d:-5}, style:"bold",
+      result:"簽約金先落袋，只是動筆之後才發現，逼出來的故事讀起來就是少了點什麼。"},
+    {label:"誠實跟編輯說還沒準備好，寧可晚一點", delta:{d:2, fame:-2}, style:"safe",
+      result:"婉拒之後續集的熱度確實跟著冷了一點，但至少下一本不會是硬擠出來的東西。"},
+    {label:"提議寫一個不同角度的外傳，說服出版社", delta:{a:3, c:2, money:-2}, style:"safe",
+      result:"這個提案花了不少力氣說服編輯，最後拍板定案，寫起來反而比原班人馬的續集更帶勁。"}
   ]}),
 
 EV({id:"editor_catches_plagiarism", paths:["editor"], stageMin:1,
@@ -2043,18 +2044,16 @@ EV({id:"refund_after_finished", paths:["store"], repeat:true, title:"顧客想�
       result:"通融換來的是對方的感激，只是心裡也清楚，這種例外開了頭就很難每次都拒絕。"}
   ]}),
 
-EV({id:"landlord_raises_rent", paths:["store"], stageMin:2, once:true,
-  title:"房東通知要漲租",
-  desc:function(p){ return "房東一通電話打來，語氣客氣但態度堅決：租約到期後，租金要調漲一成五，"+p.name+"當場心算了一下這對店裡損益表的意義。"; },
+EV({id:"regular_bad_debt", paths:["store"], stageMin:2, once:true,
+  title:"熟客賒帳越滾越大",
+  desc:function(p){ return "一位相熟多年的常客，這半年來每次都說「先記著，這個月手頭緊」，"+p.name+"翻開帳本，才發現這筆欠款已經滾到一個尷尬的數字。"; },
   choices:[
-    {label:"硬著頭皮簽下去，先保住店面位置", delta:{money:-10, d:-4}, style:"safe",
-      result:"簽下去之後帳面壓力明顯變大，但至少不用面對搬家的折騰。"},
-    {label:"賭一把跟房東談判，爭取折衷方案", style:"bold",
-      chance:function(p){ return clamp(0.3+p.stats.c/150, 0.2, 0.6); },
-      success:{delta:{money:-3, c:4}, result:"談判意外奏效，最後只漲了一點點，這場交涉也讓房東對這間店多了幾分敬意。"},
-      fail:{delta:{money:-14, d:-3}, result:"談判沒能談出什麼，最後還是照漲，只是多花的時間跟精神一點都沒少。"}},
-    {label:"開始物色更便宜的新店面", delta:{d:-6, money:-5}, style:"bold",
-      result:"看房、搬遷的過程磨掉不少精力，但新地點的租金壓力總算輕了一些。"}
+    {label:"開口討債，把話說開", delta:{money:6, c:-4, d:-2}, style:"bold",
+      result:"錢是拿回來了一部分，只是這位熟客後來明顯疏遠了，店裡少了一個常來聊天的身影。"},
+    {label:"算了，當作損失，日後不再賒帳", delta:{money:-8, d:2}, style:"safe",
+      result:"認賠之後心裡反而輕鬆，也順勢立了「恕不賒帳」的新規矩。"},
+    {label:"私下提議，讓對方用二手書抵帳", delta:{money:-2, c:3, a:2}, style:"safe",
+      result:"用書抵帳的提議意外讓對方鬆了口氣，這批換來的二手書，後來也真的在架上找到了買家。"}
   ]})
 ];
 var EVENTS_BY_ID = {};
@@ -2115,6 +2114,7 @@ function resumeProgress(){
   if(!S.eventLastAge) S.eventLastAge = {};
   if(S.lastTicker===undefined) S.lastTicker = null;
   if(S.debtTier===undefined) S.debtTier = 0;
+  if(S.allocPoolUsed===undefined) S.allocPoolUsed = allocSpentTotal();
   var calls = S.rngCalls||0;
   setSeed(S.seed);
   S.rngCalls = 0;
@@ -2162,7 +2162,8 @@ function newGame(name, pathKey, background){
     breakthroughTier:{a:0,b:0,c:0,d:0,e:0},
     breakthroughPeak:{a:0,b:0,c:0,d:0,e:0},
     lastTicker:null,
-    debtTier:0
+    debtTier:0,
+    allocPoolUsed:0
   };
   setSeed(S.seed);
   if(pathKey==="editor" || pathKey==="marketing"){ S.company = pick(COMPANIES); }
@@ -2243,7 +2244,7 @@ function notableEventLines(logSlice){
     else if(l.won===false) lines.push("「"+l.title+"」這次沒能賭對，「"+l.choice+"」的代價留得很明顯。");
     else if(l.tier==="up2") lines.push("「"+l.title+"」是這段時間最亮眼的一筆，「"+l.choice+"」的選擇收穫扎實。");
     else if(l.tier==="down2") lines.push("「"+l.title+"」是這段時間比較難熬的一關，「"+l.choice+"」這個決定後來讓人有點後悔。");
-    else lines.push("「"+l.title+"」也在這段時間發生了，選了「"+l.choice+"」。");
+    else lines.push("「"+l.title+"」也在這段時間發生了——"+(l.resultText||"選了「"+l.choice+"」。"));
   }
   return lines;
 }
@@ -2329,6 +2330,7 @@ function startYear(){
   snapshotYear();
   S.allocPool = poolForYear();
   S.allocSpent = {a:0,b:0,c:0,d:0,e:0};
+  S.allocPoolUsed = 0;
   if(S.stageIdx>0 || S.turnInStage>0){
     var beforeD = S.stats.d;
     S.stats.d = clamp(S.stats.d+5, 0, 100);
@@ -2493,6 +2495,7 @@ function resolveChoice(idx){
     '<div class="delta">'+(deltaHTML||'<span style="color:var(--dim);background:none;border:none;padding:0;">（沒有明顯變化）</span>')+'</div></div>'
   );
   checkBreakthroughs();
+  checkDebtTier();
   S.log.push({age:S.age, title:ev.title, choice:choice.label, company:companyAtEvent,
     tier:verdict.tier, won:(choice.success&&choice.fail)?won:null, resultText:resultText});
   S.pendingEventId = null;
@@ -2584,11 +2587,13 @@ function checkDebtTier(){
   if(target>cur){
     S.debtTier = target;
     pushDebtCard(target, true);
-    if(target===1){ S.fame = clamp(S.fame-3, 0, 100); }
+    // 幅度比原本 -3/-6/-3 再調低——現在每個事件結算後都會即時檢查，比原本只在年初抽查一次抓到更多次真實的跨線，
+    // 頻率變高了，單次代價就要跟著調低，否則過勞率會被推高（120 局批次模擬從 ~8% 衝到 11.7%）
+    if(target===1){ S.fame = clamp(S.fame-2, 0, 100); }
     else if(target===2){
-      S.fame = clamp(S.fame-6, 0, 100);
+      S.fame = clamp(S.fame-4, 0, 100);
       var lo = (S.traits && S.traits.battleScarred) ? 16 : 0;
-      S.stats.d = clamp(S.stats.d-3, lo, 100);
+      S.stats.d = clamp(S.stats.d-2, lo, 100);
     }
   } else if(cur>=1){
     var floor = cur===2 ? DEBT_TIER_RATIO[1]-0.15 : DEBT_TIER_RATIO[0]-0.15;
@@ -2619,15 +2624,22 @@ function allocSpentTotal(){
   return Object.keys(S.allocSpent).reduce(function(s,k){return s+S.allocSpent[k];},0);
 }
 var ALLOC_PER_STAT_CAP = 5; // 單一能力一年最多加這麼多點，避免「全押同一項」比角色扮演式分散加點更有效率的雪球問題
+var ALLOC_HIGH_COST_THRESH = 70; // 70 以上每點要花 2 點池數——單純的單年上限延遲不了全押策略，複查報告指出五路線最後全都還是衝到 100
+function allocCostFor(curVal){ return curVal>=ALLOC_HIGH_COST_THRESH ? 2 : 1; }
 function allocInc(k){
-  if(allocSpentTotal()>=S.allocPool) return;
-  if(S.stats[k]+S.allocSpent[k]>=100) return;
+  var curVal = S.stats[k]+S.allocSpent[k];
+  if(curVal>=100) return;
   if(S.allocSpent[k]>=ALLOC_PER_STAT_CAP) return;
+  var cost = allocCostFor(curVal);
+  if((S.allocPoolUsed||0)+cost>S.allocPool) return;
   S.allocSpent[k]++;
+  S.allocPoolUsed = (S.allocPoolUsed||0)+cost;
   render();
 }
 function allocDec(k){
   if(S.allocSpent[k]<=0) return;
+  var cost = allocCostFor(S.stats[k]+S.allocSpent[k]-1);
+  S.allocPoolUsed = Math.max(0, (S.allocPoolUsed||0)-cost);
   S.allocSpent[k]--;
   render();
 }
@@ -3315,17 +3327,20 @@ function bindPhase(){
 /* allocation footer */
 function renderAllocFooter(){
   var order = PATHS[S.path].order, labels=PATHS[S.path].labels;
-  var spent = allocSpentTotal();
+  var used = S.allocPoolUsed||0;
   var rows = order.map(function(k){
     var val = S.stats[k]+S.allocSpent[k];
     var atCap = S.allocSpent[k]>=ALLOC_PER_STAT_CAP;
-    return '<div class="alloc-row"><span class="alloc-name">'+labels[k]+(atCap?' <span class="alloc-cap-tag">單年上限</span>':'')+'</span>'+
+    var nextCost = allocCostFor(val);
+    var cantAfford = used+nextCost>S.allocPool;
+    var highCost = val>=ALLOC_HIGH_COST_THRESH;
+    return '<div class="alloc-row"><span class="alloc-name">'+labels[k]+(atCap?' <span class="alloc-cap-tag">單年上限</span>':'')+(highCost?' <span class="alloc-cap-tag alloc-high-tag">每點雙倍</span>':'')+'</span>'+
       '<div class="alloc-bar"><i style="width:'+clamp(val,0,100)+'%"></i></div>'+
       '<div class="alloc-btns"><button data-dec="'+k+'" '+(S.allocSpent[k]<=0?"disabled":"")+'>−</button>'+
-      '<button data-inc="'+k+'" '+((spent>=S.allocPool||val>=100||atCap)?"disabled":"")+'>＋</button></div></div>';
+      '<button data-inc="'+k+'" '+((cantAfford||val>=100||atCap)?"disabled":"")+'>＋</button></div></div>';
   }).join("");
-  return '<p class="hint">年初：這一年能投入的心力有限，分配給誰，決定接下來會遇上什麼。單一能力一年最多投入 '+ALLOC_PER_STAT_CAP+' 點，逼自己多方發展。</p>'+
-    '<div class="pool">可分配點數：'+(S.allocPool-spent)+' / '+S.allocPool+'</div>'+
+  return '<p class="hint">年初：這一年能投入的心力有限，分配給誰，決定接下來會遇上什麼。單一能力一年最多投入 '+ALLOC_PER_STAT_CAP+' 點；能力值 '+ALLOC_HIGH_COST_THRESH+' 以上每點要花 2 點池數，越接近頂峰，精進得越慢。</p>'+
+    '<div class="pool">可分配點數：'+(S.allocPool-used)+' / '+S.allocPool+'</div>'+
     rows+
     '<div class="actions"><button class="primary" id="confirmAlloc">確定分配，迎接這一年</button></div>';
 }
@@ -3368,25 +3383,32 @@ function renderStart(){
       '<div class="actions"><button class="primary" id="resumeBtn">繼續上次的旅程</button>'+
       '<button class="ghost" id="discardSaveBtn">捨棄，重新開始</button></div></div>';
   }
-  var introBlock = saved ? "" : '<div class="startpage intro-block" style="margin-bottom:14px;">'+
+  var careerLog = loadCareerLog();
+  var isFirstTimer = !saved && careerLog.length===0;
+  var introBlock = !isFirstTimer ? "" : '<div class="startpage intro-block" style="margin-bottom:14px;">'+
     '<div class="sub">新手須知</div>'+
     '<p style="margin:6px 0;">選一條路線，經歷 <b>14 年</b>的出版業生涯——新人期→衝刺期→巔峰期→衰退期，共四階段。</p>'+
     '<p style="margin:6px 0;">每年年初分配能力點數，接著會遇到<b>三次事件</b>（年初／仲春／盛夏／歲末其中三個時間點各觸發一次），每次都要做選擇。</p>'+
     '<p style="margin:6px 0;">能力值不只是數字：帶「放手一搏」標籤的選項會直接顯示成功機率，機率會隨對應能力值升高而變好；能力值練到 <b>50／82</b> 還會觸發專屬的「能力突破」回饋。</p>'+
     '<p style="margin:0;">14 年結束後，依你的最終能力值、財力、知名度，以及過程中做出的選擇，會組合出專屬的生涯結局。</p>'+
     '</div>';
-  var careerLog = loadCareerLog();
   var careerBlock = "";
   if(careerLog.length){
     var counts = {author:0,editor:0,marketing:0,translator:0,store:0};
     careerLog.forEach(function(e){ if(counts[e.path]!==undefined) counts[e.path]++; });
     var countsText = Object.keys(PATHS).map(function(k){ return PATHS[k].label+'×'+(counts[k]||0); }).join('　');
+    var uniqueEndings = {};
+    careerLog.forEach(function(e){ uniqueEndings[e.path+"|"+e.title]=true; });
+    var uniqueCount = Object.keys(uniqueEndings).length;
+    var greatCount = careerLog.filter(function(e){ return e.tag==="great"; }).length;
     var recent = careerLog.slice(-5).reverse().map(function(e){
-      return '<span class="career-chip">'+esc(PATHS[e.path].noun)+'・'+esc(e.title)+'・'+e.age+' 歲</span>';
+      var star = e.tag==="great" ? '★' : '';
+      return '<span class="career-chip">'+star+esc(PATHS[e.path].noun)+'・'+esc(e.title)+'・'+e.age+' 歲</span>';
     }).join("");
     careerBlock = '<div class="startpage career-block" style="margin-bottom:14px;">'+
       '<div class="sub">生涯紀錄</div>'+
       '<p style="margin:6px 0;">目前為止已完成 <b>'+careerLog.length+'</b> 局：'+countsText+'</p>'+
+      '<p style="margin:6px 0;">已解鎖 <b>'+uniqueCount+'</b> 種不同結局，其中 <b>'+greatCount+'</b> 次拿到最佳（★）結局。</p>'+
       '<div class="career-recent">'+recent+'</div>'+
       '</div>';
   }
