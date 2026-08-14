@@ -230,6 +230,11 @@ button.choice .odds{
   color:var(--dim); margin-top:4px; opacity:.9;
 }
 button.choice:hover .odds{ color:var(--ink); }
+button.choice .risk{
+  display:block; font-size:.64rem; letter-spacing:.02em; font-weight:600;
+  color:var(--bad); margin-top:2px; opacity:.85;
+}
+button.choice:hover .risk{ color:var(--bad); opacity:1; }
 button.primary{
   font-size:.78rem; letter-spacing:.04em; font-weight:700;
   background:var(--gold); color:var(--ink); border:2px solid var(--ink); border-radius:999px;
@@ -3095,6 +3100,11 @@ function render(scrollDown){
         if(bd.debtPenalty<0) breakdownBits.push("財務壓力 "+Math.round(bd.debtPenalty*100)+"%");
         var breakdownText = breakdownBits.length ? "（基礎 "+Math.round(bd.base*100)+"%＋"+breakdownBits.join("＋")+"）" : "";
         oddsHTML = '<span class="odds">放手一搏 · 成功機率 '+pct+'%'+esc(breakdownText)+'</span>';
+        var failDeltas = fmtDelta(S, c.fail.delta).filter(function(d){ return d.val<0; });
+        if(failDeltas.length){
+          var riskText = failDeltas.map(function(d){ return d.label+" "+d.val+(d.unit||""); }).join("／");
+          oddsHTML += '<span class="risk">賭輸的代價：'+esc(riskText)+'</span>';
+        }
       }
       return '<button class="choice" data-choice="'+i+'">'+esc(c.label)+oddsHTML+'</button>';
     }).join("")+'</div>';
