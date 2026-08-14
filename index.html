@@ -475,6 +475,40 @@ var COMPANIES = [
   "晨周出版","寶罐文化"
 ];
 
+/* 各路線的書展邀約：每次抽到「書展邀約」事件時，依過去抽中次數循環決定這次是哪個書展（見 fairFor） */
+var BOOK_FAIRS = {
+  author:[
+    {name:"台北國際書展", flavor:"讀者排隊要簽名的每一秒，都提醒你這行到底圖的是什麼。"},
+    {name:"法蘭克福書展", flavor:"版權經紀人穿梭在攤位之間，作品被翻成另一種語言的可能性，就寫在這幾天的行程表裡。"},
+    {name:"愛丁堡國際書展", flavor:"跟一群素未謀面的國際作家同台對談，那種被放進「同一個世界」的感覺很不真實。"}
+  ],
+  editor:[
+    {name:"台北國際書展", flavor:"攤位前的排隊人潮，是這一整年選書眼光最直接的成績單。"},
+    {name:"法蘭克福書展", flavor:"版權貿易的主戰場，走一圈下來名片換得比睡眠時間還多。"},
+    {name:"波隆那童書展", flavor:"滿場插畫與童書版權，如果談成一筆海外授權，回去可以吹噓一整年。"}
+  ],
+  marketing:[
+    {name:"台北國際書展", flavor:"攤位設計、快閃活動、簽書會排程，全部壓在這幾天一次見真章。"},
+    {name:"香港書展", flavor:"人潮洶湧到連走路都要側身，話題操作得好，聲量能一路燒回台灣。"},
+    {name:"法蘭克福書展", flavor:"雖然不是主場，但混進版權洽談的場子，說不定能撈到意外的合作靈感。"}
+  ],
+  translator:[
+    {name:"法蘭克福書展", flavor:"版權經紀人跟出版社編輯來回穿梭的戰場，譯者在這裡通常是被介紹、而不是主動介紹自己。"},
+    {name:"波隆那童書展", flavor:"童書譯者的兵家必爭之地，一本熱門繪本的譯稿邀約，很可能就是在這裡談成的。"},
+    {name:"台北國際書展", flavor:"少數能光明正大站上版權頁之外、被讀者認出來的場合。"}
+  ],
+  store:[
+    {name:"台北國際書展", flavor:"跟各家出版社業務面對面談進貨條件，比email往返有效率多了。"},
+    {name:"香港書展", flavor:"觀摩別人怎麼把攤位擠得水洩不通，順便挖幾個能帶回店裡的陳列點子。"},
+    {name:"波隆那童書展", flavor:"專程飛去挑幾本國內還沒人代理的繪本，賭一把成為店裡的隱藏亮點。"}
+  ]
+};
+function fairFor(p){
+  var list = BOOK_FAIRS[p.path];
+  var idx = logCountRef("書展邀約") % list.length;
+  return list[idx];
+}
+
 /* ---------- effect helpers ---------- */
 function fmtDelta(p, delta){
   var out=[];
@@ -565,6 +599,23 @@ EV({id:"pandemic", once:true, stageMax:2,
       result:"手忙腳亂地摸索直播設備，意外打開了一些原本觸及不到的觀眾。"},
     {label:"咬牙撐過去，能省則省", delta:{money:5, d:-6}, style:"safe",
       result:"省下的每一分錢都很有感，但撐過去的過程也磨掉了不少精神。"}
+  ]}),
+
+EV({id:"book_fair", repeat:true, weight:0.8, stageMin:2,
+  title:"書展邀約",
+  desc:function(p){
+    var f = fairFor(p);
+    return "「"+f.name+"」的邀請函躺在信箱裡。"+f.flavor+p.name+"得決定要不要排開手邊的事，飛一趟過去。";
+  },
+  choices:[
+    {label:"排開行程，全力參展", style:"bold",
+      chance:function(p){ return clamp(0.3+(p.stats.c+p.stats.a)/300, 0.2, 0.65); },
+      success:{delta:{c:8, money:10, fame:4, d:-10}, flag:"attendedFair",
+        result:"這一趟沒有白跑，攤位前談成的合作比預期扎實，只是回程整個人也跟著虛脫。"},
+      fail:{delta:{money:-8, d:-14},
+        result:"人潮洶湧地跑了一整趟，最後卻沒能真的談成什麼，只留下一身的疲憊跟一筆差旅費。"}},
+    {label:"婉拒邀請，先顧好手邊的事", delta:{d:3}, style:"safe",
+      result:"婉拒之後日子照常，只是滑開社群，看著同業曬出的書展照片，心裡還是有一點點不是滋味。"}
   ]}),
 
 EV({id:"lowbirth", paths:["editor","marketing"], stageMin:2,
