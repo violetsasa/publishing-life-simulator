@@ -1920,6 +1920,135 @@ EV({id:"store_niche_fork", paths:["store"], once:true,
       result:"轉型後的選書更有個性，來的客人也更懂得欣賞，只是暢銷書帶來的穩定現金流，一去不回了。"},
     {label:"還是留一些暢銷書撐場面，兩邊都做", delta:{money:2, d:-2}, style:"safe",
       result:"兩邊都做，貨源分配的爛帳依然每次上演，只是至少現金流還算穩得住。"}
+  ]}),
+
+/* ---------- 新增事件（擴充事件池，每條路線 2 個） ---------- */
+EV({id:"publisher_folds", paths:["author"], stageMin:2,
+  title:"合作的出版社突然倒閉",
+  desc:function(p){ return "一封簡短的公告信寄到信箱："+p.name+"合作多年的出版社宣布倒閉清算，手上這本書的版稅跟庫存瞬間變成一團爛帳。"; },
+  choices:[
+    {label:"委託律師，正式追討欠款", delta:{money:-5, d:-3}, style:"safe",
+      result:"律師費先燒了一筆，追回來的錢遠不及預期，但至少留下了正式的紀錄。"},
+    {label:"自己去跟清算人談，賭一次拿回版權", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.c/150, 0.2, 0.6); },
+      success:{delta:{fame:4, c:4}, flag:"regainedRights",
+        result:"談判意外順利，版權總算重新回到自己手上，馬上就有其他出版社來探詢重新出版的意願。"},
+      fail:{delta:{money:-8, d:-5}, result:"清算程序拖得比想像中久，最後版權還是卡在一堆債權人名單裡動彈不得。"}},
+    {label:"認賠，把這本書當作過去式", delta:{d:3}, style:"safe",
+      result:"不去糾結這筆爛帳，心裡反而輕鬆不少，只是想到那些庫存書大概要被銷毀，還是有點不捨。"}
+  ]}),
+
+EV({id:"ghostwrite_offer", paths:["author"], stageMin:1,
+  title:"一份掛別人名字的代筆邀約",
+  desc:function(p){ return "經紀人轉來一份代筆邀約：幫一位知名人士捉刀寫自傳，稿費優渥，但書封上不會出現"+p.name+"的名字。"; },
+  choices:[
+    {label:"接下，穩定的收入先顧好生活", delta:{money:16, a:-2, d:-3}, style:"safe",
+      result:"稿費確實解決了不少燃眉之急，只是每次看到那本書被討論，都得假裝自己跟這件事無關。"},
+    {label:"婉拒，堅持只寫掛自己名字的作品", delta:{d:2, a:2}, style:"bold",
+      result:"婉拒之後收入沒有比較寬裕，但每一個字都掛著自己的名字，這件事本身就是一種底氣。"},
+    {label:"談條件，爭取書裡一行不起眼的「文字協力」", delta:{money:10, c:3}, style:"safe",
+      result:"對方答應了這個不算過分的要求，那一行小字，後來成了履歷上一個只有內行人才看得懂的彩蛋。"}
+  ]}),
+
+EV({id:"editor_catches_plagiarism", paths:["editor"], stageMin:1,
+  title:"審稿時發現疑似抄襲",
+  desc:function(p){ return p.name+"審著一份文筆突出的新人投稿，越看越眼熟——比對之後發現，好幾個段落幾乎是另一本書的翻版。"; },
+  choices:[
+    {label:"直接退稿，附上具體比對證據", delta:{d:-2, c:2}, style:"safe",
+      result:"退稿信寫得有理有據，對方沒有多做辯解，這件事就此無聲落幕。"},
+    {label:"給作者一次機會，要求整段重寫", delta:{money:-3, d:-4}, style:"bold",
+      result:"重寫後的版本確實乾淨了，只是往後每次收到這位作者的稿子，都會忍不住多比對兩遍。"},
+    {label:"低調通報給業界的抄襲通報群組", delta:{fame:2, c:-2}, style:"bold",
+      result:"消息在小圈子裡傳開，這件事後來被其他編輯提起時，"+"都會加一句「還好被攔下來了」。"}
+  ]}),
+
+EV({id:"author_goes_dark", paths:["editor"], stageMin:2,
+  title:"作者在截稿前一週人間蒸發",
+  desc:function(p){ return "距離印刷排程只剩一週，"+p.name+"負責的作者卻突然已讀不回、電話不接，稿子還差最後兩章沒交。"; },
+  choices:[
+    {label:"直接殺到作者家樓下堵人", delta:{d:-5, c:3}, style:"bold",
+      result:"堵到人之後才知道對方是家裡出了急事，稿子總算在最後一刻補齊，兩人都累得說不出話。"},
+    {label:"跟印刷廠協調，硬是把排程往後挪", delta:{money:-6, d:-2}, style:"safe",
+      result:"協調成功換來喘息空間，代價是這筆延誤費用，之後開會時被財務部門念了好幾次。"},
+    {label:"啟動備案，找人代筆補完剩下的章節", delta:{money:-10, fame:-2}, style:"safe",
+      result:"代筆補完的部分讀起來還算銜接得上，只是這件事後來變成編輯部私下流傳的一則八卦。"}
+  ]}),
+
+EV({id:"fake_reviews_ask", paths:["marketing"], stageMin:1,
+  title:"主管要求「衝一下評論區」",
+  desc:function(p){ return "主管在會議上直接建議："+p.name+"是不是能找幾個帳號，在新書上市當天先衝一波好評，「讀者就是喜歡看熱鬧」。"; },
+  choices:[
+    {label:"照做，先求數字好看", delta:{fame:6, c:-4}, style:"bold",
+      result:"評論區確實熱鬧了一陣子，只是心裡總有個角落，知道這份熱鬧是假的。"},
+    {label:"婉拒，改提真實讀者的口碑操作方案", delta:{money:-4, a:4}, style:"safe",
+      result:"口碑操作的效果來得比較慢，但累積下來的評論看起來，至少是真的。"},
+    {label:"私下跟主管據理力爭，指出風險", delta:{d:-3, c:2}, style:"safe",
+      result:"這場對話不算愉快，但主管後來私下沒再提起這件事。"}
+  ]}),
+
+EV({id:"campaign_copied", paths:["marketing"], stageMin:2,
+  title:"競品幾乎複製了你的行銷企劃",
+  desc:function(p){ return "上個月才提案通過的行銷點子，這週赫然出現在競爭出版社的新書宣傳上，連視覺風格都像是照抄。"; },
+  choices:[
+    {label:"公開在社群上點名比較，博取聲量", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.c/150, 0.2, 0.6); },
+      success:{delta:{fame:10, c:2}, result:"這波「抓抄襲」意外成了話題，反而讓更多人注意到原本的企劃。"},
+      fail:{delta:{fame:-6, c:-4}, result:"對方矢口否認，事情演變成各說各話的口水戰，看起來反而像小題大作。"}},
+    {label:"不理會，把精力放在做出下一個更好的點子", delta:{b:5, d:-2}, style:"safe",
+      result:"沒有糾結這件事，反而逼出了一個更完整的下一波企劃。"},
+    {label:"私下向對方窗口反映，要求以後注意", delta:{c:3}, style:"safe",
+      result:"對方的回應不痛不癢，但至少把話講明白了，心裡舒坦一些。"}
+  ]}),
+
+EV({id:"hide_ai_translation", paths:["translator"], stageMin:1,
+  title:"編輯希望你「別提」用了 AI 輔助",
+  desc:function(p){ return "為了趕上出版排程，"+p.name+"這次確實用 AI 工具打了草稿再精修，編輯卻私下交代：「這件事不要對外提，讀者會有意見。」"; },
+  choices:[
+    {label:"照辦，反正交出去的是自己精修過的成品", delta:{money:6, a:-2, d:-2}, style:"safe",
+      result:"稿子如期交出，只是往後每次被問起翻譯過程，回答時都得斟酌用詞。"},
+    {label:"堅持在譯者序裡誠實說明工作流程", delta:{fame:3, c:-2}, style:"bold",
+      result:"誠實說明引來一些討論，有讚賞坦白的，也有質疑品質的，但至少問心無愧。"},
+    {label:"乾脆這次全程手譯，證明自己不需要", delta:{a:4, d:-6}, style:"bold",
+      result:"全程手譯耗掉的體力比想像中多，但交出去的稿子，是徹徹底底自己的東西。"}
+  ]}),
+
+EV({id:"source_text_error", paths:["translator"], stageMin:1,
+  title:"原文裡有個明顯的事實錯誤",
+  desc:function(p){ return p.name+"翻譯到一半，發現原文作者顯然把兩個歷史事件的年份搞混了——照翻會把錯誤一起帶進中文版。"; },
+  choices:[
+    {label:"照實翻譯，附上譯註說明疑義", delta:{a:3, d:-2}, style:"safe",
+      result:"譯註寫得又細又謹慎，後來還被讀者稱讚「比原文還嚴謹」。"},
+    {label:"直接聯絡原出版社，反映這個錯誤", delta:{c:4, d:-3}, style:"bold",
+      result:"對方一開始有點意外，確認後還真的道謝，說這個錯誤可能會在再版時修正。"},
+    {label:"悄悄照原文翻，不節外生枝", delta:{d:2, a:-2}, style:"safe",
+      result:"沒有多惹麻煩，只是這個明知道有問題卻沒說出口的念頭，偶爾還是會想起來。"}
+  ]}),
+
+EV({id:"refund_after_finished", paths:["store"], repeat:true, title:"顧客想退一本明顯讀完的書",
+  desc:function(p){ return stale("顧客想退一本明顯讀完的書", [
+    "一位顧客拿著一本書皮都翻軟了、還夾著書籤的書要求退款，理由是「不喜歡這個結局」。",
+    "又一位顧客想退一本明顯讀完的書，"+p.name+"開始練出一套不失禮貌又能守住底線的說法。",
+    "這次的理由更誇張——「借朋友看完才發現不喜歡」，"+p.name+"哭笑不得。"
+  ]); },
+  choices:[
+    {label:"堅守規定，禮貌但明確拒絕", delta:{d:-2, fame:1}, style:"safe",
+      result:"拒絕之後對方悻悻然離開，雖然當下有點尷尬，但店裡的退換規則總算立住了。"},
+    {label:"通融一次，換個台階給彼此", delta:{money:-2, c:2}, style:"bold",
+      result:"通融換來的是對方的感激，只是心裡也清楚，這種例外開了頭就很難每次都拒絕。"}
+  ]}),
+
+EV({id:"landlord_raises_rent", paths:["store"], stageMin:2, once:true,
+  title:"房東通知要漲租",
+  desc:function(p){ return "房東一通電話打來，語氣客氣但態度堅決：租約到期後，租金要調漲一成五，"+p.name+"當場心算了一下這對店裡損益表的意義。"; },
+  choices:[
+    {label:"硬著頭皮簽下去，先保住店面位置", delta:{money:-10, d:-4}, style:"safe",
+      result:"簽下去之後帳面壓力明顯變大，但至少不用面對搬家的折騰。"},
+    {label:"賭一把跟房東談判，爭取折衷方案", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.c/150, 0.2, 0.6); },
+      success:{delta:{money:-3, c:4}, result:"談判意外奏效，最後只漲了一點點，這場交涉也讓房東對這間店多了幾分敬意。"},
+      fail:{delta:{money:-14, d:-3}, result:"談判沒能談出什麼，最後還是照漲，只是多花的時間跟精神一點都沒少。"}},
+    {label:"開始物色更便宜的新店面", delta:{d:-6, money:-5}, style:"bold",
+      result:"看房、搬遷的過程磨掉不少精力，但新地點的租金壓力總算輕了一些。"}
   ]})
 ];
 var EVENTS_BY_ID = {};
