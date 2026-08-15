@@ -235,6 +235,8 @@ button.choice .risk{
   color:var(--bad); margin-top:2px; opacity:.85;
 }
 button.choice:hover .risk{ color:var(--bad); opacity:1; }
+button.choice .risk.risk-neutral{ color:var(--dim); }
+button.choice:hover .risk.risk-neutral{ color:var(--dim); }
 button.primary{
   font-size:.78rem; letter-spacing:.04em; font-weight:700;
   background:var(--gold); color:var(--ink); border:2px solid var(--ink); border-radius:999px;
@@ -2054,6 +2056,69 @@ EV({id:"regular_bad_debt", paths:["store"], stageMin:2, once:true,
       result:"認賠之後心裡反而輕鬆，也順勢立了「恕不賒帳」的新規矩。"},
     {label:"私下提議，讓對方用二手書抵帳", delta:{money:-2, c:3, a:2}, style:"safe",
       result:"用書抵帳的提議意外讓對方鬆了口氣，這批換來的二手書，後來也真的在架上找到了買家。"}
+  ]}),
+
+/* ---------- 再擴充一批新事件（每條路線 1 個） ---------- */
+EV({id:"talkshow_gossip", paths:["author"], stageMin:2,
+  title:"上通告卻只想聊八卦",
+  desc:function(p){ return "通告單位邀請"+p.name+"上一個收視不錯的談話節目宣傳新書，主持人事前卻透露，比起書本身，他們更想聊"+p.name+"的私生活。"; },
+  choices:[
+    {label:"照單全收，反正曝光就是曝光", delta:{fame:8, d:-4, a:-2}, style:"bold",
+      result:"節目效果確實不錯，只是播出後大家記住的是八卦片段，很少人提到書名。"},
+    {label:"上節目前先講好底線，只聊創作", delta:{fame:3, c:-2}, style:"safe",
+      result:"主持人配合度不算高，話題常常被拉走，但至少沒有徹底變成八卦專題。"},
+    {label:"婉拒通告，改接其他純談書的採訪", delta:{d:2, a:3}, style:"safe",
+      result:"曝光量確實少了一截，但那幾篇專訪認真討論了書的內容，讀起來扎實得多。"}
+  ]}),
+
+EV({id:"unfair_new_author_contract", paths:["editor"], stageMin:1,
+  title:"新人作者的合約條件明顯偏向公司",
+  desc:function(p){ return "審著一份剛簽下的新人合約，"+p.name+"越看越不對勁——版稅比例、優先出版權的條款，全部壓得很緊，新人作者顯然沒仔細看就簽了。"; },
+  choices:[
+    {label:"私下提醒作者，建議重新談", delta:{c:-3, d:-2, fame:2}, style:"bold",
+      result:"重新談判的過程讓公司高層有點不悅，但那位作者後來私下說了聲謝謝。"},
+    {label:"照公司規定走，這不是自己該管的事", delta:{d:2, c:-1}, style:"safe",
+      result:"合約照原樣走了，心裡卻始終有個疙瘩，偶爾想起還是不太踏實。"},
+    {label:"私下多解釋條款細節，讓作者自己決定", delta:{c:2, d:-1}, style:"safe",
+      result:"作者聽完解釋後還是簽了，但至少這次是真正知情之後做的決定。"}
+  ]}),
+
+EV({id:"piggyback_tragedy", paths:["marketing"], stageMin:2,
+  title:"老闆想蹭一則社會新聞的熱度",
+  desc:function(p){ return "一則沉重的社會事件正佔據所有版面，主管卻興奮地提議：「這波流量正好，我們把新書文案改一下蹭上去。」"; },
+  choices:[
+    {label:"照辦，先求流量再說", delta:{fame:6, c:-6, d:-3}, style:"bold",
+      result:"文案確實蹭到了流量，只是留言區罵聲比讚數還多，這件事後來變成同業茶餘飯後的反面教材。"},
+    {label:"婉拒，提議改做完全無關的宣傳排程", delta:{d:2, fame:-2}, style:"safe",
+      result:"婉拒之後聲量確實普通，但至少沒有讓新書跟一則悲劇綁在一起。"},
+    {label:"私下說服主管，改用更含蓄的方式呼應時事", delta:{c:3, a:2}, style:"safe",
+      result:"這個折衷方案花了不少唇舌才說服主管，最後呈現出來的文案，至少沒有讓人皺眉。"}
+  ]}),
+
+EV({id:"translator_panel_gag", paths:["translator"], stageMin:2,
+  title:"受邀上譯者座談，卻被要求別提翻譯費",
+  desc:function(p){ return "主辦單位邀請"+p.name+"上一場譯者座談分享經驗，私下卻特別叮囑：「盡量別提翻譯費過低的話題，比較敏感。」"; },
+  choices:[
+    {label:"照辦，只分享翻譯技巧跟趣事", delta:{fame:3, c:2}, style:"safe",
+      result:"座談氣氛融洽，只是台下有幾位同業眼神明顯在說「你也知道大家心裡有數」。"},
+    {label:"不理會叮囑，還是誠實聊了翻譯費的現實", style:"bold",
+      chance:function(p){ return clamp(0.3+p.stats.c/150, 0.2, 0.6); },
+      success:{delta:{fame:8, c:4}, result:"誠實發言意外獲得滿場掌聲，主辦單位事後雖然臉色複雜，但沒有多說什麼。"},
+      fail:{delta:{fame:-4, c:-5}, result:"發言後現場氣氛明顯尷尬，之後幾次座談邀約也悄悄減少了。"}},
+    {label:"委婉帶到這個話題，點到為止", delta:{c:3, a:2}, style:"safe",
+      result:"委婉的說法讓台下幾位同業會心一笑，算是在安全範圍內傳達了訊息。"}
+  ]}),
+
+EV({id:"closing_colleague_stock", paths:["store"], stageMin:2,
+  title:"同業書店收掉，低價出清求你接手",
+  desc:function(p){ return "巷口另一間撐了多年的獨立書店決定收掉，老闆私下找上"+p.name+"：「庫存我便宜出給你，能救多少算多少。」"; },
+  choices:[
+    {label:"全部接手，當作是義氣相挺", delta:{money:-12, c:6, fame:3}, style:"bold",
+      result:"接下的貨大半找到了新主人，只是帳面壓力著實吃緊了一陣子。"},
+    {label:"只挑幾本店裡真的缺的書", delta:{money:-3, c:3}, style:"safe",
+      result:"精挑細選之後，帳面壓力小很多，只是心裡對沒能多幫一點忙還是有點過意不去。"},
+    {label:"婉拒，自己店裡庫存也吃緊", delta:{d:2}, style:"safe",
+      result:"婉拒之後日子照常，只是巷口那間店收掉的那天，還是忍不住多看了兩眼。"}
   ]})
 ];
 var EVENTS_BY_ID = {};
@@ -2115,6 +2180,8 @@ function resumeProgress(){
   if(S.lastTicker===undefined) S.lastTicker = null;
   if(S.debtTier===undefined) S.debtTier = 0;
   if(S.allocPoolUsed===undefined) S.allocPoolUsed = allocSpentTotal();
+  if(!S.narratedLogSeqs) S.narratedLogSeqs = {};
+  if(S.logSeq===undefined) S.logSeq = S.log ? S.log.length : 0;
   var calls = S.rngCalls||0;
   setSeed(S.seed);
   S.rngCalls = 0;
@@ -2163,7 +2230,9 @@ function newGame(name, pathKey, background){
     breakthroughPeak:{a:0,b:0,c:0,d:0,e:0},
     lastTicker:null,
     debtTier:0,
-    allocPoolUsed:0
+    allocPoolUsed:0,
+    logSeq:0,
+    narratedLogSeqs:{}
   };
   setSeed(S.seed);
   if(pathKey==="editor" || pathKey==="marketing"){ S.company = pick(COMPANIES); }
@@ -2224,9 +2293,12 @@ var STAT_FLAVOR = {
 };
 
 /* 從這段期間的生涯記事裡，挑出 1-2 個「真的發生過的事」（賭贏/賭輸、大起大落、非例行的一次性事件優先），
-   讓回顧讀起來像「這段時間經歷了什麼」，不是只有數字翻譯。挑不出來才退回純數值敘述。 */
-function notableEventLines(logSlice){
-  var scored = (logSlice||[]).map(function(l){
+   讓回顧讀起來像「這段時間經歷了什麼」，不是只有數字翻譯。挑不出來才退回純數值敘述。
+   已經在某一年的年度回顧裡引用過的事件，同一件事不會在涵蓋它的階段回顧裡被重複引用第二次
+   （S.narratedLogSeqs 記錄哪些 log 項目已經被寫進回顧過）；如果排除掉已引用的之後真的挑不出東西，
+   才退回原始清單，寧可重複也不要讓階段回顧整段空白。 */
+function pickNotableFrom(candidates){
+  var scored = candidates.map(function(l){
     var score = 0;
     if(l.won===true) score += 3;
     else if(l.won===false) score += 2;
@@ -2240,12 +2312,19 @@ function notableEventLines(logSlice){
     var l = scored[i].l;
     if(usedTitles[l.title]) continue;
     usedTitles[l.title] = true;
+    if(S.narratedLogSeqs && l.seq!==undefined) S.narratedLogSeqs[l.seq] = true;
     if(l.won===true) lines.push("「"+l.title+"」這一局賭贏了，選擇「"+l.choice+"」這步棋走對了。");
     else if(l.won===false) lines.push("「"+l.title+"」這次沒能賭對，「"+l.choice+"」的代價留得很明顯。");
     else if(l.tier==="up2") lines.push("「"+l.title+"」是這段時間最亮眼的一筆，「"+l.choice+"」的選擇收穫扎實。");
     else if(l.tier==="down2") lines.push("「"+l.title+"」是這段時間比較難熬的一關，「"+l.choice+"」這個決定後來讓人有點後悔。");
     else lines.push("「"+l.title+"」也在這段時間發生了——"+(l.resultText||"選了「"+l.choice+"」。"));
   }
+  return lines;
+}
+function notableEventLines(logSlice){
+  var pool = logSlice||[];
+  var fresh = pool.filter(function(l){ return !(S.narratedLogSeqs && l.seq!==undefined && S.narratedLogSeqs[l.seq]); });
+  var lines = pickNotableFrom(fresh.length?fresh:pool);
   return lines;
 }
 /* 用階段/年度起訖的能力值差，挑出變動最大的 1-2 項配上文字敘述，
@@ -2497,7 +2576,7 @@ function resolveChoice(idx){
   checkBreakthroughs();
   checkDebtTier();
   S.log.push({age:S.age, title:ev.title, choice:choice.label, company:companyAtEvent,
-    tier:verdict.tier, won:(choice.success&&choice.fail)?won:null, resultText:resultText});
+    tier:verdict.tier, won:(choice.success&&choice.fail)?won:null, resultText:resultText, seq:(S.logSeq=(S.logSeq||0)+1)});
   S.pendingEventId = null;
   S.phase="post";
   render(true);
@@ -3275,10 +3354,16 @@ function render(scrollDown){
         if(bd.debtPenalty<0) breakdownBits.push("財務壓力 "+Math.round(bd.debtPenalty*100)+"%");
         var breakdownText = breakdownBits.length ? "（基礎 "+Math.round(bd.base*100)+"%＋"+breakdownBits.join("＋")+"）" : "";
         oddsHTML = '<span class="odds">放手一搏 · 成功機率 '+pct+'%'+esc(breakdownText)+'</span>';
-        var failDeltas = fmtDelta(S, c.fail.delta).filter(function(d){ return d.val<0; });
-        if(failDeltas.length){
-          var riskText = failDeltas.map(function(d){ return d.label+" "+d.val+(d.unit||""); }).join("／");
-          oddsHTML += '<span class="risk">賭輸的代價：'+esc(riskText)+'</span>';
+        var allFailDeltas = fmtDelta(S, c.fail.delta);
+        var negFailDeltas = allFailDeltas.filter(function(d){ return d.val<0; });
+        var previewList = negFailDeltas.length ? negFailDeltas : allFailDeltas;
+        var riskCls = negFailDeltas.length ? "risk" : "risk risk-neutral";
+        if(previewList.length){
+          var riskLabel = negFailDeltas.length ? "賭輸的代價" : "賭輸的結果";
+          var riskText = previewList.map(function(d){ var sign=d.val>0?"+":""; return d.label+" "+sign+d.val+(d.unit||""); }).join("／");
+          oddsHTML += '<span class="'+riskCls+'">'+riskLabel+'：'+esc(riskText)+'</span>';
+        } else {
+          oddsHTML += '<span class="'+riskCls+'">賭輸的結果：不算失敗，只是沒有額外收穫</span>';
         }
       }
       return '<button class="choice" data-choice="'+i+'">'+esc(c.label)+oddsHTML+'</button>';
